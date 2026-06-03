@@ -1,0 +1,553 @@
+Error: Cannot find module 'expo-dev-client/package.json'
+Require stack:
+- /data/data/com.termux/files/home/AiaConApp/noop.js
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1476:15)
+    at resolveFileName (/data/data/com.termux/files/usr/lib/node_modules/eas-cli/node_modules/resolve-from/index.js:29:39)
+    at resolveFrom (/data/data/com.termux/files/usr/lib/node_modules/eas-cli/node_modules/resolve-from/index.js:43:9)
+    at module.exports (/data/data/com.termux/files/usr/lib/node_modules/eas-cli/node_modules/resolve-from/index.js:46:47)
+    at isExpoDevClientInstalled (/data/data/com.termux/files/usr/lib/node_modules/eas-cli/build/build/utils/devClient.js:77:36)
+    at ensureExpoDevClientInstalledForDevClientBuildsAsync (/data/data/com.termux/files/usr/lib/node_modules/eas-cli/build/build/utils/devClient.js:18:9)
+    at runBuildAndSubmitAsync (/data/data/com.termux/files/usr/lib/node_modules/eas-cli/build/build/runBuildAndSubmit.js:87:79)
+    at async Build.runAsync (/data/data/com.termux/files/usr/lib/node_modules/eas-cli/build/commands/build/index.js:129:35)
+    at async Build.run (/data/data/com.termux/files/usr/lib/node_modules/eas-cli/build/commandUtils/EasCommand.js:176:16)
+    at async Build._run (/data/data/com.termux/files/usr/lib/node_modules/eas-cli/node_modules/@oclif/core/lib/command.js:183:22) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [ '/data/data/com.termux/files/home/AiaConApp/noop.js' ]
+}
+Resolved "preview" environment for the build. Learn more: https://docs.expo.dev/eas/environment-variables/#setting-the-environment-for-your-builds
+No environment variables with visibility "Plain text" and "Sensitive" found for the "preview" environment on EAS.
+
+
+
+✔ Using remote Android credentials (Expo server)
+✔ Using Keystore from configuration: Build Credentials PzSCp0uycU (default)
+
+Compressing project files and uploading to EAS Build. Learn more: https://expo.fyi/eas-build-archive
+- Compressing project files
+making shallow copy { requireCommit: false }
+makeShallowCopyAsync {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  dst: '/data/data/com.termux/files/usr/tmp/home/eas-cli-nodejs/526930b0-78e7-48c1-a055-f0449484fe92-shallow-clone'
+}
+initializing ignore mapping with .gitignore files {
+  ignoreFilePaths: [ '.gitignore', 'android/.gitignore' ],
+  ignoreMapping: [ [ '', [Ignore] ], [ '', [Ignore] ], [ 'android/', [Ignore] ] ]
+}
+makeShallowCopyAsync ignoreMapping {
+  ignoreMapping: [ [ '', [Ignore] ], [ '', [Ignore] ], [ 'android/', [Ignore] ] ]
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/App.new.js',
+  relativePath: 'App.new.js'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/AGENTS.md',
+  relativePath: 'AGENTS.md'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/src',
+  relativePath: 'src'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/src/navigation',
+  relativePath: 'src/navigation'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/src/navigation/MainTabs.js',
+  relativePath: 'src/navigation/MainTabs.js'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/src/components',
+  relativePath: 'src/components'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/src/components/OptimizedImage.js',
+  relativePath: 'src/components/OptimizedImage.js'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/src/components/TopBar.js',
+  relativePath: 'src/components/TopBar.js'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/src/components/BottomTabBar.js',
+  relativePath: 'src/components/BottomTabBar.js'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/src/theme',
+  relativePath: 'src/theme'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/src/hooks',
+  relativePath: 'src/hooks'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/src/features',
+  relativePath: 'src/features'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/src/features/reels',
+  relativePath: 'src/features/reels'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/src/features/profile',
+  relativePath: 'src/features/profile'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/src/features/feed',
+  relativePath: 'src/features/feed'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/src/features/feed/feedService.js',
+  relativePath: 'src/features/feed/feedService.js'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/src/features/onboarding',
+  relativePath: 'src/features/onboarding'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/src/features/search',
+  relativePath: 'src/features/search'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/src/features/search/searchService.js',
+  relativePath: 'src/features/search/searchService.js'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/src/features/auth',
+  relativePath: 'src/features/auth'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/src/features/messaging',
+  relativePath: 'src/features/messaging'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/src/features/messaging/messagingService.js',
+  relativePath: 'src/features/messaging/messagingService.js'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/src/features/stories',
+  relativePath: 'src/features/stories'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/src/features/stories/storiesService.js',
+  relativePath: 'src/features/stories/storiesService.js'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/src/features/notifications',
+  relativePath: 'src/features/notifications'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/src/features/communities',
+  relativePath: 'src/features/communities'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/src/context',
+  relativePath: 'src/context'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/src/context/AuthContext.js',
+  relativePath: 'src/context/AuthContext.js'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/src/utils',
+  relativePath: 'src/utils'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/src/utils/performance.js',
+  relativePath: 'src/utils/performance.js'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/src/screens',
+  relativePath: 'src/screens'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/src/screens/DiscoverScreen.js',
+  relativePath: 'src/screens/DiscoverScreen.js'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/src/screens/ConversationsScreen.js',
+  relativePath: 'src/screens/ConversationsScreen.js'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/src/screens/AIChatScreen.js',
+  relativePath: 'src/screens/AIChatScreen.js'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/src/screens/ProfileScreen.js',
+  relativePath: 'src/screens/ProfileScreen.js'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/src/screens/VidsScreen.js',
+  relativePath: 'src/screens/VidsScreen.js'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/src/screens/auth',
+  relativePath: 'src/screens/auth'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/src/screens/auth/SignupScreen.js',
+  relativePath: 'src/screens/auth/SignupScreen.js'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/src/screens/auth/ProfilePictureScreen.js',
+  relativePath: 'src/screens/auth/ProfilePictureScreen.js'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/src/screens/auth/OnboardingScreen.js',
+  relativePath: 'src/screens/auth/OnboardingScreen.js'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/src/screens/auth/AccountTypeScreen.js',
+  relativePath: 'src/screens/auth/AccountTypeScreen.js'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/src/screens/auth/GenderScreen.js',
+  relativePath: 'src/screens/auth/GenderScreen.js'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/src/screens/auth/PersonaScreen.js',
+  relativePath: 'src/screens/auth/PersonaScreen.js'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/src/screens/auth/FullNameScreen.js',
+  relativePath: 'src/screens/auth/FullNameScreen.js'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/src/screens/auth/LoginScreen.js',
+  relativePath: 'src/screens/auth/LoginScreen.js'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/src/screens/auth/EmailSignupScreen.js',
+  relativePath: 'src/screens/auth/EmailSignupScreen.js'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/src/screens/auth/UsernameScreen.js',
+  relativePath: 'src/screens/auth/UsernameScreen.js'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/src/screens/auth/PhoneAuthScreen.js',
+  relativePath: 'src/screens/auth/PhoneAuthScreen.js'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/src/screens/auth/DateOfBirthScreen.js',
+  relativePath: 'src/screens/auth/DateOfBirthScreen.js'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/src/screens/auth/UsernameSetupScreen.js',
+  relativePath: 'src/screens/auth/UsernameSetupScreen.js'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/src/screens/auth/ProfileSetupScreen.js',
+  relativePath: 'src/screens/auth/ProfileSetupScreen.js'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/src/screens/auth/CreatorFieldsScreen.js',
+  relativePath: 'src/screens/auth/CreatorFieldsScreen.js'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/src/screens/auth/GuideScreen.js',
+  relativePath: 'src/screens/auth/GuideScreen.js'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/src/screens/auth/SignupMethodScreen.js',
+  relativePath: 'src/screens/auth/SignupMethodScreen.js'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/src/screens/HomeScreen.js',
+  relativePath: 'src/screens/HomeScreen.js'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/src/services',
+  relativePath: 'src/services'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/src/services/music.js',
+  relativePath: 'src/services/music.js'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/src/services/storage.js',
+  relativePath: 'src/services/storage.js'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/src/services/backend.js',
+  relativePath: 'src/services/backend.js'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/audit.sh',
+  relativePath: 'audit.sh'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/assets',
+  relativePath: 'assets'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/assets/splash-icon.png',
+  relativePath: 'assets/splash-icon.png'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/assets/app_logo.png',
+  relativePath: 'assets/app_logo.png'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/assets/android-icon-background.png',
+  relativePath: 'assets/android-icon-background.png'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/assets/favicon.png',
+  relativePath: 'assets/favicon.png'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/assets/app_app.png',
+  relativePath: 'assets/app_app.png'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/assets/android-icon-monochrome.png',
+  relativePath: 'assets/android-icon-monochrome.png'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/assets/app_logo.jpg',
+  relativePath: 'assets/app_logo.jpg'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/assets/logo_con.png',
+  relativePath: 'assets/logo_con.png'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/assets/splash.png',
+  relativePath: 'assets/splash.png'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/assets/android-icon-foreground.png',
+  relativePath: 'assets/android-icon-foreground.png'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/assets/icon.png',
+  relativePath: 'assets/icon.png'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/assets/adaptive-icon.png',
+  relativePath: 'assets/adaptive-icon.png'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/yarn.lock',
+  relativePath: 'yarn.lock'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/firestore.indexes.json',
+  relativePath: 'firestore.indexes.json'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/CTO_REVIEW.md',
+  relativePath: 'CTO_REVIEW.md'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/package-lock.json',
+  relativePath: 'package-lock.json'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/babel.config.js',
+  relativePath: 'babel.config.js'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/index.js',
+  relativePath: 'index.js'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/.gitignore',
+  relativePath: '.gitignore'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/CLAUDE.md',
+  relativePath: 'CLAUDE.md'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/storage.rules',
+  relativePath: 'storage.rules'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/build.log',
+  relativePath: 'build.log'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/LICENSE',
+  relativePath: 'LICENSE'
+}
+skipping {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/node_modules',
+  relativePath: 'node_modules'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/diagnose.sh',
+  relativePath: 'diagnose.sh'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/App.js.backup',
+  relativePath: 'App.js.backup'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/package.json',
+  relativePath: 'package.json'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/App.js',
+  relativePath: 'App.js'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/functions',
+  relativePath: 'functions'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/functions/package.json',
+  relativePath: 'functions/package.json'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/functions/src',
+  relativePath: 'functions/src'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/functions/src/index.ts',
+  relativePath: 'functions/src/index.ts'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/functions/src/social.ts',
+  relativePath: 'functions/src/social.ts'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/firebaseConfig.js',
+  relativePath: 'firebaseConfig.js'
+}
+skipping {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/android',
+  relativePath: 'android'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/.claude',
+  relativePath: '.claude'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/.claude/settings.json',
+  relativePath: '.claude/settings.json'
+}
+skipping {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/.git',
+  relativePath: '.git'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/app.json',
+  relativePath: 'app.json'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/eas.json',
+  relativePath: 'eas.json'
+}
+copying {
+  src: '/data/data/com.termux/files/home/AiaConApp',
+  srcFilePath: '/data/data/com.termux/files/home/AiaConApp/firestore.rules',
+  relativePath: 'firestore.rules'
+}
+- Uploading to EAS Build (0 / 7.0 MB)
+✔ Uploaded to EAS 21s
+- Computing project fingerprint
+⌛️ Computing the project fingerprint is taking longer than expected...
+⏩ To skip this step, set the environment variable: EAS_SKIP_AUTO_FINGERPRINT=1

@@ -1,0 +1,66 @@
+{
+  "indexes": [
+    {
+      "collectionId": "posts",
+      "fields": [
+        { "fieldPath": "userId", "mode": "ASCENDING" },
+        { "fieldPath": "createdAt", "mode": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionId": "posts",
+      "fields": [
+        { "fieldPath": "communityId", "mode": "ASCENDING" },
+        { "fieldPath": "createdAt", "mode": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionId": "stories",
+      "fields": [
+        { "fieldPath": "userId", "mode": "ASCENDING" },
+        { "fieldPath": "expiresAt", "mode": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionId": "reels",
+      "fields": [
+        { "fieldPath": "trendingScore", "mode": "DESCENDING" },
+        { "fieldPath": "createdAt", "mode": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionId": "notifications",
+      "fields": [
+        { "fieldPath": "userId", "mode": "ASCENDING" },
+        { "fieldPath": "createdAt", "mode": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionId": "messages",
+      "fields": [
+        { "fieldPath": "conversationId", "mode": "ASCENDING" },
+        { "fieldPath": "createdAt", "mode": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionId": "conversations",
+      "fields": [
+        { "fieldPath": "participants", "mode": "ARRAY_CONTAINS" },
+        { "fieldPath": "lastMessageAt", "mode": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionId": "userSearch",
+      "fields": [
+        { "fieldPath": "usernameLower", "mode": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionId": "trendingTopics",
+      "fields": [
+        { "fieldPath": "score", "mode": "DESCENDING" },
+        { "fieldPath": "date", "mode": "DESCENDING" }
+      ]
+    }
+  ]
+}

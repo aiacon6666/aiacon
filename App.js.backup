@@ -1,0 +1,104 @@
+import React, { useEffect, useState } from 'react';
+import { View, StyleSheet, Image, Dimensions } from 'react-native';
+import { NavigationContainer } from '@react-navigation/native';
+import { createStackNavigator } from '@react-navigation/stack';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { Ionicons } from '@expo/vector-icons';
+
+import LoginScreen from './src/screens/auth/LoginScreen';
+import SignupScreen from './src/screens/auth/SignupScreen';
+import OnboardingScreen from './src/screens/auth/OnboardingScreen';
+import CreatorFieldsScreen from './src/screens/auth/CreatorFieldsScreen';
+import AccountTypeScreen from './src/screens/auth/AccountTypeScreen';
+import UsernameSetupScreen from './src/screens/auth/UsernameSetupScreen';
+import DateOfBirthScreen from './src/screens/auth/DateOfBirthScreen';
+import GenderScreen from './src/screens/auth/GenderScreen';
+import ProfileSetupScreen from './src/screens/auth/ProfileSetupScreen';
+import GuideScreen from './src/screens/auth/GuideScreen';
+
+import HomeScreen from './src/screens/HomeScreen';
+import VidsScreen from './src/screens/VidsScreen';
+import DiscoverScreen from './src/screens/DiscoverScreen';
+import ConversationsScreen from './src/screens/ConversationsScreen';
+import ProfileScreen from './src/screens/ProfileScreen';
+
+const { width } = Dimensions.get('window');
+const LOGO_SIZE = 300;
+const Stack = createStackNavigator();
+const Tab = createBottomTabNavigator();
+
+function SplashScreen() {
+  return (
+    <View style={styles.splash}>
+      <Image source={require('./assets/app_app.png')} style={styles.logo} resizeMode="contain" />
+    </View>
+  );
+}
+
+function MainTabs() {
+  return (
+    <Tab.Navigator screenOptions={({ route }) => ({
+      headerShown: false,
+      tabBarStyle: { backgroundColor: '#000', borderTopColor: '#1A1A1A' },
+      tabBarActiveTintColor: '#FFF',
+      tabBarInactiveTintColor: '#888',
+      tabBarIcon: ({ color, size }) => {
+        let iconName;
+        if (route.name === 'Home') iconName = 'home';
+        else if (route.name === 'Vids') iconName = 'videocam';
+        else if (route.name === 'Discover') iconName = 'search';
+        else if (route.name === 'Conversations') iconName = 'chatbubble-ellipses';
+        else if (route.name === 'Profile') iconName = 'person';
+        return <Ionicons name={iconName} size={size} color={color} />;
+      },
+    })}>
+      <Tab.Screen name="Home" component={HomeScreen} />
+      <Tab.Screen name="Vids" component={VidsScreen} />
+      <Tab.Screen name="Discover" component={DiscoverScreen} />
+      <Tab.Screen name="Conversations" component={ConversationsScreen} />
+      <Tab.Screen name="Profile" component={ProfileScreen} />
+    </Tab.Navigator>
+  );
+}
+
+export default function App() {
+  const [showMain, setShowMain] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setShowMain(true), 2000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (!showMain) return <SplashScreen />;
+
+  return (
+    <NavigationContainer>
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="Login" component={LoginScreen} />
+        <Stack.Screen name="SignupMethod" component={SignupMethodScreen} />
+        <Stack.Screen name="EmailSignup" component={EmailSignupScreen} />
+        <Stack.Screen name="UsernameSetup" component={UsernameScreen} />
+        <Stack.Screen name="FullName" component={FullNameScreen} />
+        <Stack.Screen name="DateOfBirth" component={DateOfBirthScreen} />
+        <Stack.Screen name="Gender" component={GenderScreen} />
+        <Stack.Screen name="Persona" component={PersonaScreen} />
+        <Stack.Screen name="ProfilePicture" component={ProfilePictureScreen} />
+        <Stack.Screen name="Signup" component={SignupScreen} />
+        <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+        <Stack.Screen name="CreatorFields" component={CreatorFieldsScreen} />
+        <Stack.Screen name="AccountType" component={AccountTypeScreen} />
+        <Stack.Screen name="UsernameSetup" component={UsernameSetupScreen} />
+        <Stack.Screen name="DateOfBirth" component={DateOfBirthScreen} />
+        <Stack.Screen name="Gender" component={GenderScreen} />
+        <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen} />
+        <Stack.Screen name="Guide" component={GuideScreen} />
+        <Stack.Screen name="Main" component={MainTabs} />
+      </Stack.Navigator>
+    </NavigationContainer>
+  );
+}
+
+const styles = StyleSheet.create({
+  splash: { flex: 1, backgroundColor: '#000', justifyContent: 'center', alignItems: 'center' },
+  logo: { width: LOGO_SIZE, height: LOGO_SIZE },
+});

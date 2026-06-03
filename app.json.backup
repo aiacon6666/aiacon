@@ -1,0 +1,41 @@
+{
+  "expo": {
+  "facebookAppId": "4524606454461841",
+  "facebookDisplayName": "AiaCon",
+    "name": "AiaCon",
+    "slug": "aiacon",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "image": "./assets/app_app.png",
+      "resizeMode": "cover",
+      "backgroundColor": "#050A30",
+      "dark": {
+        "image": "./assets/app_app.png",
+        "resizeMode": "cover",
+        "backgroundColor": "#050A30"
+      }
+    },
+    "android": {
+      "package": "com.aiacon",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#050A30"
+      },
+      "permissions": [
+        "android.permission.INTERNET"
+      ]
+    },
+    "plugins": [
+      "expo-splash-screen",
+      "expo-font"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "9344650d-f580-4e1b-9bdc-18c6568f333f"
+      }
+    }
+  }
+}
