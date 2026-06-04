@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { InteractionManager } from "react-native";
 import {
   SafeAreaView,
   KeyboardAvoidingView,
@@ -16,9 +15,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { InteractionManager } from "react-native";
 import { BlurView } from 'expo-blur';
-import { InteractionManager } from "react-native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -30,13 +27,9 @@ import Animated, {
   SlideInDown,
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
-import { InteractionManager } from "react-native";
 import { useNavigation } from '@react-navigation/native';
-import { InteractionManager } from "react-native";
 import Svg, { Path, Defs, LinearGradient as SvgGradient, Stop } from 'react-native-svg';
-import { InteractionManager } from "react-native";
 import { loginWithEmailOrUsername } from '../../services/backend';
-import { InteractionManager } from "react-native";
 
 const { width, height } = Dimensions.get('window');
 
