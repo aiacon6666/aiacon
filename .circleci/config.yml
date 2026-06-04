@@ -20,16 +20,16 @@ jobs:
           command: npm install -g expo-cli
       - run:
           name: Prebuild Android native folder
-          command: npx expo prebuild --platform android --clean
+          command: npx expo prebuild --platform android --clean --no-install
       - run:
           name: Build APK with Gradle
           command: |
             cd android
             chmod +x gradlew
-            ./gradlew assembleRelease
+            ./gradlew assembleDebug
       - store_artifacts:
-          path: android/app/build/outputs/apk/release/app-release.apk
-          destination: aiacon-release.apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          destination: aiacon-debug.apk
 
 workflows:
   build:
@@ -37,4 +37,6 @@ workflows:
       - build-android:
           filters:
             branches:
-              only: main
+              only:
+                - main
+                - chunk/fix-pngjs-prebuild-android
