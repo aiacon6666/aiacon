@@ -23,12 +23,10 @@ jobs:
           command: npm install --legacy-peer-deps -g eas-cli
       - run:
           name: EAS Login
-          command: echo "$EXPO_TOKEN" | eas whoami || true
+          command: eas whoami
       - run:
           name: Build Android APK
           command: eas build --platform android --local --non-interactive --output ./build/aiacon.apk
-          environment:
-            EXPO_TOKEN: $EXPO_TOKEN
       - store_artifacts:
           path: ./build/aiacon.apk
           destination: aiacon-debug.apk
