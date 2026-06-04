@@ -7,4 +7,3 @@ ios/
 .DS_Store
 
 # Central API keys file
-src/config/keys.js

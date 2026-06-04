@@ -6,16 +6,6 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
-    "splash": {
-      "image": "./assets/app_app.png",
-      "resizeMode": "cover",
-      "backgroundColor": "#050A30",
-      "dark": {
-        "image": "./assets/app_app.png",
-        "resizeMode": "cover",
-        "backgroundColor": "#050A30"
-      }
-    },
     "android": {
       "package": "com.aiacon",
       "adaptiveIcon": {
@@ -24,8 +14,6 @@
       },
       "permissions": ["android.permission.INTERNET"]
     },
-    "facebookAppId": "4524606454461841",
-    "facebookDisplayName": "AiaCon",
     "plugins": ["expo-splash-screen", "expo-font"],
     "extra": {
       "eas": {
