@@ -5,8 +5,8 @@ orbs:
 
 jobs:
   build-android:
-    machine:
-      image: ubuntu-2204:current
+    docker:
+      - image: cimg/android:2024.01
     resource_class: large
     steps:
       - checkout
@@ -26,7 +26,7 @@ jobs:
           command: |
             cd android
             chmod +x gradlew
-            ./gradlew assembleDebug
+            ./gradlew assembleDebug --no-daemon
       - store_artifacts:
           path: android/app/build/outputs/apk/debug/app-debug.apk
           destination: aiacon-debug.apk
