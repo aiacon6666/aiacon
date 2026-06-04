@@ -1,6 +1,6 @@
+import { collection, query, where, orderBy, limit, startAfter, getDocs, doc, updateDoc, arrayUnion, arrayRemove, getDoc, increment, writeBatch, deleteDoc } from "firebase/firestore";
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, sendEmailVerification, updateProfile, PhoneAuthProvider, signInWithCredential } from 'firebase/auth';
-import { getFirestore, doc, setDoc, getDoc, updateDoc, query, collection, where, getDocs, limit, runTransaction } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -195,7 +195,6 @@ export const initializeUserRelations = async (userId) => {
   if (!data.followers) await updateDoc(userRef, { followers: [] });
 };
 // ========== AURA ECONOMY ==========
-import { doc, updateDoc, increment, getDoc } from 'firebase/firestore';
 
 // Get user aura balance
 export const getUserAura = async (userId) => {
@@ -241,7 +240,6 @@ export const unlockAvatarItem = async (userId, itemId) => {
   }
 };
 // ========== COMMUNITIES ==========
-import { collection, addDoc, getDocs, query, where, orderBy, limit, doc, updateDoc, arrayUnion, arrayRemove, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 
 // Create a new community
 export const createCommunity = async (name, description, isPublic = true, createdBy) => {
@@ -353,7 +351,6 @@ export const getUserSquads = async (userId) => {
   return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 };
 // ========== DIRECT MESSAGING (1-ON-1) ==========
-import { collection, addDoc, getDocs, query, where, orderBy, limit, doc, updateDoc, arrayUnion, arrayRemove, getDoc, setDoc, serverTimestamp, onSnapshot, increment } from 'firebase/firestore';
 
 // Get or create a conversation between two users
 export const getOrCreateConversation = async (userId1, userId2) => {
