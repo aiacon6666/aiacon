@@ -16,22 +16,20 @@ jobs:
           name: Install dependencies
           command: npm install --legacy-peer-deps
       - run:
-          name: Install ninja-build
-          command: sudo apt-get update && sudo apt-get install -y ninja-build
+          name: Install Expo CLI
+          command: npm install -g expo-cli
       - run:
-          name: Install EAS CLI
-          command: npm install --legacy-peer-deps -g eas-cli
+          name: Prebuild Android native folder
+          command: npx expo prebuild --platform android --clean
       - run:
-          name: EAS Login
-          command: echo "$EXPO_TOKEN" | eas whoami || true
-      - run:
-          name: Build Android APK
-          command: eas build --platform android --local --non-interactive --output ./build/aiacon.apk
-          environment:
-            EXPO_TOKEN: $EXPO_TOKEN
+          name: Build APK with Gradle
+          command: |
+            cd android
+            chmod +x gradlew
+            ./gradlew assembleRelease
       - store_artifacts:
-          path: ./build/aiacon.apk
-          destination: aiacon-debug.apk
+          path: android/app/build/outputs/apk/release/app-release.apk
+          destination: aiacon-release.apk
 
 workflows:
   build:
