@@ -1,15 +1,17 @@
-// Firebase config
-export const firebaseApiKey = "AIzaSyDHsZfuqWcd3rd85RIfxepJ9kiB6HWxko4";
-export const firebaseAuthDomain = "aiacon-f3655.firebaseapp.com";
-export const firebaseProjectId = "aiacon-f3655";
-export const firebaseStorageBucket = "aiacon-f3655.firebasestorage.app";
-export const firebaseMessagingSenderId = "593208551399";
-export const firebaseAppId = "1:593208551399:android:c30c4f1280881b9fc73f42";
+// Firebase config (from your earlier google-services.json)
+export const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyDHsZfuqWcd3rd85RIfxepJ9kiB6HWxko4",
+  authDomain: "aiacon-f3655.firebaseapp.com",
+  projectId: "aiacon-f3655",
+  storageBucket: "aiacon-f3655.firebasestorage.app",
+  messagingSenderId: "593208551399",
+  appId: "1:593208551399:android:c30c4f1280881b9fc73f42"
+};
 
 // Cloudinary
 export const cloudinaryApiKey = "265816457913299";
 export const cloudinaryCloudName = "dwlbyagsg";
-export const cloudinaryApiSecret = "<INSERT_API_SECRET>"; // You need to replace with real secret
+export const cloudinaryApiSecret = "<INSERT_API_SECRET>";
 
 // Supabase
 export const supabaseUrl = "https://qtwcakvuadmuivevvvfm.supabase.co";
@@ -34,6 +36,7 @@ export const neonConnectionString = "npg_BQ7gF3jzOfwL";
 
 // Telegram Bot
 export const telegramBotToken = "8094728254:AAEUBEduJ";
+export const telegramChatId = "YOUR_TELEGRAM_CHAT_ID";
 
 // YouTube Data API v3
 export const youtubeApiKey = "AIzaSyCJwhiQbImxQr6P-mT";
@@ -53,3 +56,15 @@ export const ablyApiKey = "8b1HhA.RZc5hg:ap2p8c-qBvRP";
 // Google OAuth
 export const googleAndroidClientId = "501028640164-6l";
 export const googleWebClientId = "1047856595431-jvk";
+
+// Facebook
+export const facebookAppId = "4524606454461841";
+
+// For consistency with backend imports
+export const TELEGRAM_BOT_TOKEN = telegramBotToken;
+export const TELEGRAM_CHAT_ID = telegramChatId;
+export const YOUTUBE_API_KEY = youtubeApiKey;
+export const GEMINI_API_KEY = geminiApiKey;
+export const ABLY_API_KEY = ablyApiKey;
+export const GOOGLE_CLIENT_ID = googleWebClientId;
+export const FACEBOOK_APP_ID = facebookAppId;
