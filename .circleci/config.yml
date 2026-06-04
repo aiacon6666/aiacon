@@ -6,19 +6,24 @@ orbs:
 jobs:
   build-android:
     docker:
-      - image: cimg/node:20.19
+      - image: cimg/android:2024.04
+    resource_class: large
     steps:
       - checkout
+      - node/install:
+          node-version: '20'
       - node/install-packages:
           pkg-manager: npm
       - run:
-          name: Install Expo and EAS CLI
-          command: npm install -g expo-cli eas-cli
+          name: Install Android SDK components
+          command: |
+            yes | sdkmanager --licenses || true
+            sdkmanager "platforms;android-35" "build-tools;35.0.0" "ndk;27.1.12297006"
       - run:
           name: Build Android APK
-          command: eas build --platform android --profile preview --non-interactive --wait
+          command: cd android && ./gradlew assembleRelease --no-daemon
       - store_artifacts:
-          path: ./build
+          path: android/app/build/outputs/apk/release
           destination: android-build
 
 workflows:
