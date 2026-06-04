@@ -2,7 +2,7 @@
   "expo": {
     "name": "AiaCon",
     "slug": "aiacon",
-    "version": "1.0.5",
+    "version": "1.0.6",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -26,10 +26,7 @@
     },
     "facebookAppId": "4524606454461841",
     "facebookDisplayName": "AiaCon",
-    "plugins": [
-      "expo-splash-screen",
-      "expo-font"
-    ],
+    "plugins": ["expo-splash-screen", "expo-font"],
     "extra": {
       "eas": {
         "projectId": "9344650d-f580-4e1b-9bdc-18c6568f333f"
