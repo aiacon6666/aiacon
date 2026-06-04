@@ -1,14 +1,12 @@
+import AvatarCreator from './src/components/AvatarCreator';
 import React, { useEffect, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import * as SplashScreen from 'expo-splash-screen';
-import { getAuth, onAuthStateChanged } from 'firebase/auth';
-import { getFirestore, doc, getDoc } from 'firebase/firestore';
+import { useFonts } from 'expo-font';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { InteractionManager, Platform, LogBox } from 'react-native';
+import { InteractionManager, LogBox } from 'react-native';
 
-// Screens (lazy loaded)
 import LoginScreen from './src/screens/auth/LoginScreen';
 import SignupMethodScreen from './src/screens/auth/SignupMethodScreen';
 import EmailSignupScreen from './src/screens/auth/EmailSignupScreen';
@@ -18,12 +16,13 @@ import DateOfBirthScreen from './src/screens/auth/DateOfBirthScreen';
 import GenderScreen from './src/screens/auth/GenderScreen';
 import PersonaScreen from './src/screens/auth/PersonaScreen';
 import ProfilePictureScreen from './src/screens/auth/ProfilePictureScreen';
-import PhoneAuthScreen from './src/screens/auth/PhoneAuthScreen';
+import CreateStory from "./src/screens/CreateStory";
+import StoryViewer from "./src/screens/StoryViewer";
 import OnboardingScreen from './src/screens/onboarding/OnboardingScreen';
 import MainTabs from './src/navigation/MainTabs';
 
 SplashScreen.preventAutoHideAsync();
-LogBox.ignoreLogs(['AsyncStorage has been extracted from react-native core']);
+LogBox.ignoreLogs(['AsyncStorage has been extracted']);
 
 const Stack = createNativeStackNavigator();
 
@@ -35,9 +34,8 @@ function AppNavigator() {
   useEffect(() => {
     if (loading) return;
     InteractionManager.runAfterInteractions(() => {
-      if (!user) {
-        setInitialRoute('Login');
-      } else {
+      if (!user) setInitialRoute('Login');
+      else {
         const onboardingCompleted = userData?.onboardingCompleted;
         setInitialRoute(onboardingCompleted ? 'MainTabs' : 'Onboarding');
       }
@@ -59,14 +57,27 @@ function AppNavigator() {
       <Stack.Screen name="Gender" component={GenderScreen} />
       <Stack.Screen name="Persona" component={PersonaScreen} />
       <Stack.Screen name="ProfilePicture" component={ProfilePictureScreen} />
-      <Stack.Screen name="PhoneAuth" component={PhoneAuthScreen} />
+        <Stack.Screen name="AuraStore" component={AuraStore} />
+      <Stack.Screen name="AvatarCreator" component={AvatarCreator} />
       <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+        <Stack.Screen name="CreateStory" component={CreateStory} />
+        <Stack.Screen name="StoryViewer" component={StoryViewer} />
       <Stack.Screen name="MainTabs" component={MainTabs} />
+        <Stack.Screen name="Chat" component={ChatScreen} />
+        <Stack.Screen name="NewConversation" component={NewConversationScreen} />
+        <Stack.Screen name="CommunityFeed" component={CommunityFeedScreen} />
+        <Stack.Screen name="Squads" component={SquadsScreen} />
     </Stack.Navigator>
   );
 }
 
 export default function App() {
+  const [fontsLoaded] = useFonts({
+    'FiraCode-Regular': require('./assets/fonts/FiraCode-Regular.ttf'),
+  });
+
+  if (!fontsLoaded) return null;
+
   return (
     <AuthProvider>
       <NavigationContainer>
