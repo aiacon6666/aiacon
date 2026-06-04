@@ -6,19 +6,26 @@ orbs:
 jobs:
   build-android:
     docker:
-      - image: cimg/node:20.19
+      - image: clang/android:2024.04.1
+    resource_class: large
     steps:
       - checkout
+      - run:
+          name: Install Ninja (required for CMake)
+          command: |
+            apt-get update && apt-get install -y ninja-build
+      - node/install:
+          node-version: '20.19'
       - node/install-packages:
           pkg-manager: npm
       - run:
           name: Install Expo and EAS CLI
           command: npm install -g expo-cli eas-cli
       - run:
-          name: Build Android APK
-          command: eas build --platform android --profile preview --non-interactive --wait
+          name: Build Android APK locally
+          command: eas build --platform android --local --non-interactive --output=app.apk
       - store_artifacts:
-          path: ./build
+          path: app.apk
           destination: android-build
 
 workflows:
