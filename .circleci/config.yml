@@ -6,7 +6,8 @@ orbs:
 jobs:
   build-android:
     docker:
-      - image: cimg/node:20.19
+      - image: cimg/android:2024.04.1
+    resource_class: large
     steps:
       - checkout
       - node/install-packages:
@@ -15,8 +16,12 @@ jobs:
           name: Install Expo and EAS CLI
           command: npm install -g expo-cli eas-cli
       - run:
-          name: Build Android APK
-          command: eas build --platform android --profile preview --non-interactive --wait
+          name: Build Android APK locally
+          command: eas build --platform android --profile preview --non-interactive --local
+      - run:
+          name: Collect build artifacts
+          command: mkdir -p build && mv *.apk build/ 2>/dev/null || mv *.aab build/ 2>/dev/null || true
+          when: always
       - store_artifacts:
           path: ./build
           destination: android-build
