@@ -1,76 +1,89 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { FlatList, ActivityIndicator, View, Text, RefreshControl } from 'react-native';
-import { fetchPosts, getFollowingList } from '../services/backend';
+import { FlatList, ActivityIndicator, View, StyleSheet, RefreshControl, Text } from 'react-native';
 import PostCard from './PostCard';
-import { colors } from '../theme/colors';
+import { fetchFollowingPosts } from '../services/backend';
+import { useAuth } from '../context/AuthContext';
+import Colors from '../theme/colors';
 
-const FollowingFeed = () => {
+function FollowingFeed() {
+  const { profile } = useAuth();
   const [posts, setPosts] = useState([]);
+  const [lastDoc, setLastDoc] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [lastDoc, setLastDoc] = useState(null);
-  const [hasMore, setHasMore] = useState(true);
-  const [followingIds, setFollowingIds] = useState([]);
-
-  const loadFollowingList = async () => {
-    const ids = await getFollowingList();
-    setFollowingIds(ids);
-    return ids;
-  };
-
-  const loadPosts = async (refresh = false) => {
-    if (!refresh && !hasMore) return;
-    setLoading(true);
-    try {
-      let ids = followingIds;
-      if (ids.length === 0) ids = await loadFollowingList();
-      if (ids.length === 0) {
-        setPosts([]);
-        setHasMore(false);
-        setLoading(false);
-        return;
-      }
-      const { posts: newPosts, lastVisible } = await fetchPosts(refresh ? null : lastDoc, ids);
-      if (refresh) {
-        setPosts(newPosts);
-      } else {
-        setPosts(prev => [...prev, ...newPosts]);
-      }
-      setLastDoc(lastVisible);
-      setHasMore(newPosts.length > 0);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
-
-  const onRefresh = useCallback(() => {
-    setRefreshing(true);
-    loadFollowingList().then(() => loadPosts(true));
-  }, []);
 
   useEffect(() => {
-    loadFollowingList().then(() => loadPosts(true));
-  }, []);
+    loadInitial();
+  }, [profile]);
 
-  if (loading && posts.length === 0) {
-    return <ActivityIndicator size="large" color={colors.lavender} style={{ flex: 1, justifyContent: 'center' }} />;
+  async function loadInitial() {
+    setLoading(true);
+    const following = profile && profile.following ? profile.following : [];
+    const result = await fetchFollowingPosts(following, null, 10);
+    setPosts(result.posts);
+    setLastDoc(result.lastDoc);
+    setLoading(false);
+  }
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await loadInitial();
+    setRefreshing(false);
+  }, [profile]);
+
+  async function loadMore() {
+    if (loading) return;
+    setLoading(true);
+    const following = profile && profile.following ? profile.following : [];
+    const result = await fetchFollowingPosts(following, lastDoc, 10);
+    setPosts(prev => [...prev, ...result.posts]);
+    setLastDoc(result.lastDoc);
+    setLoading(false);
+  }
+
+  if (!profile || !profile.following || profile.following.length === 0) {
+    return (
+      <View style={styles.empty}>
+        <Text style={styles.emptyTitle}>Follow people</Text>
+        <Text style={styles.emptyText}>Posts from people you follow will appear here.</Text>
+      </View>
+    );
   }
 
   return (
     <FlatList
       data={posts}
-      renderItem={({ item }) => <PostCard post={item} onUpdate={() => loadPosts(true)} />}
       keyExtractor={item => item.id}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.lavender} />}
-      onEndReached={() => loadPosts()}
-      onEndReachedThreshold={0.5}
-      ListFooterComponent={loading && posts.length > 0 ? <ActivityIndicator size="small" color={colors.lavender} style={{ margin: 20 }} /> : null}
-      ListEmptyComponent={<View style={{ padding: 20 }}><Text style={{ color: colors.text, textAlign: 'center' }}>You aren't following anyone yet. Follow some creators!</Text></View>}
+      renderItem={({ item }) => <PostCard post={item} />}
+      onEndReached={loadMore}
+      onEndReachedThreshold={0.4}
+      ListFooterComponent={loading ? <ActivityIndicator color={Colors.accent} style={{ margin: 20 }} /> : null}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.accent} />}
+      showsVerticalScrollIndicator={false}
+      style={{ flex: 1, backgroundColor: Colors.background }}
     />
   );
-};
+}
+
+const styles = StyleSheet.create({
+  empty: {
+    flex: 1,
+    backgroundColor: Colors.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 30,
+  },
+  emptyTitle: {
+    color: Colors.text,
+    fontSize: 20,
+    fontWeight: '700',
+    marginBottom: 10,
+  },
+  emptyText: {
+    color: Colors.textSecondary,
+    fontSize: 14,
+    textAlign: 'center',
+  },
+});
 
 export default FollowingFeed;

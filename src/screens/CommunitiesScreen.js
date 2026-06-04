@@ -1,121 +1,105 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, TouchableOpacity, TextInput, Alert, Modal, SafeAreaView, ActivityIndicator } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import Colors from '../theme/colors';
+import { fetchCommunities, joinCommunity, leaveCommunity } from '../services/backend';
 import { useAuth } from '../context/AuthContext';
-import { getPublicCommunities, joinCommunity, leaveCommunity, createCommunity } from '../services/backend';
-import { colors } from '../theme/colors';
 
-const CommunitiesScreen = () => {
+function CommunitiesScreen({ navigation }) {
   const { user } = useAuth();
   const [communities, setCommunities] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [newName, setNewName] = useState('');
-  const [newDesc, setNewDesc] = useState('');
-  const [creating, setCreating] = useState(false);
 
   useEffect(() => {
     loadCommunities();
   }, []);
 
-  const loadCommunities = async () => {
+  async function loadCommunities() {
     setLoading(true);
-    const data = await getPublicCommunities();
-    setCommunities(data);
-    setLoading(false);
-  };
-
-  const handleJoin = async (communityId) => {
     try {
-      await joinCommunity(communityId, user.uid);
-      Alert.alert('Joined', 'You have joined the community');
-      loadCommunities();
-    } catch (error) {
-      Alert.alert('Error', error.message);
-    }
-  };
-
-  const handleLeave = async (communityId) => {
-    try {
-      await leaveCommunity(communityId, user.uid);
-      Alert.alert('Left', 'You have left the community');
-      loadCommunities();
-    } catch (error) {
-      Alert.alert('Error', error.message);
-    }
-  };
-
-  const handleCreate = async () => {
-    if (!newName.trim()) return;
-    setCreating(true);
-    try {
-      const communityId = await createCommunity(newName, newDesc, true, user.uid);
-      Alert.alert('Success', 'Community created!');
-      setModalVisible(false);
-      setNewName('');
-      setNewDesc('');
-      loadCommunities();
-    } catch (error) {
-      Alert.alert('Error', error.message);
+      const comms = await fetchCommunities();
+      setCommunities(comms);
+    } catch (e) {
+      console.log('fetchCommunities error', e);
     } finally {
-      setCreating(false);
+      setLoading(false);
     }
-  };
+  }
 
-  const renderItem = ({ item }) => {
-    const isMember = item.members?.includes(user?.uid);
-    return (
-      <View style={{ backgroundColor: colors.card, margin: 8, padding: 12, borderRadius: 12 }}>
-        <Text style={{ color: colors.text, fontSize: 18, fontWeight: 'bold' }}>{item.name}</Text>
-        <Text style={{ color: colors.textSecondary, marginTop: 4 }}>{item.description}</Text>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 12 }}>
-          <Text style={{ color: colors.lavender }}>{item.memberCount || 0} members</Text>
-          <TouchableOpacity
-            onPress={() => isMember ? handleLeave(item.id) : handleJoin(item.id)}
-            style={{ backgroundColor: isMember ? colors.border : colors.primary, paddingHorizontal: 16, paddingVertical: 6, borderRadius: 20 }}
-          >
-            <Text style={{ color: colors.text }}>{isMember ? 'Leave' : 'Join'}</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    );
-  };
+  async function handleJoinLeave(comm) {
+    if (!user) return;
+    const isMember = comm.members && comm.members.includes(user.uid);
+    if (isMember) {
+      await leaveCommunity(comm.id, user.uid);
+    } else {
+      await joinCommunity(comm.id, user.uid);
+    }
+    loadCommunities();
+  }
+
+  if (loading) {
+    return <ActivityIndicator color={Colors.accent} style={{ flex: 1 }} />;
+  }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-      <LinearGradient colors={[colors.background, '#0A0A14']} style={{ flex: 1 }}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16 }}>
-          <Text style={{ color: colors.text, fontSize: 24, fontWeight: 'bold', fontFamily: 'FiraCode-Regular' }}>Communities</Text>
-          <TouchableOpacity onPress={() => setModalVisible(true)}>
-            <Ionicons name="add-circle" size={32} color={colors.lavender} />
-          </TouchableOpacity>
-        </View>
-        {loading ? (
-          <ActivityIndicator size="large" color={colors.lavender} style={{ marginTop: 40 }} />
-        ) : (
-          <FlatList data={communities} renderItem={renderItem} keyExtractor={item => item.id} />
-        )}
-        <Modal visible={modalVisible} animationType="slide" transparent>
-          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)' }}>
-            <View style={{ backgroundColor: colors.card, padding: 20, borderRadius: 12, width: '80%' }}>
-              <Text style={{ color: colors.text, fontSize: 20, marginBottom: 16 }}>Create Community</Text>
-              <TextInput style={{ backgroundColor: colors.background, borderRadius: 8, padding: 10, color: colors.text, marginBottom: 12 }} placeholder="Name" placeholderTextColor={colors.textSecondary} value={newName} onChangeText={setNewName} />
-              <TextInput style={{ backgroundColor: colors.background, borderRadius: 8, padding: 10, color: colors.text, marginBottom: 20 }} placeholder="Description" placeholderTextColor={colors.textSecondary} value={newDesc} onChangeText={setNewDesc} multiline />
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                <TouchableOpacity onPress={() => setModalVisible(false)} style={{ padding: 10 }}>
-                  <Text style={{ color: colors.lavender }}>Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity onPress={handleCreate} disabled={creating} style={{ backgroundColor: colors.primary, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 20 }}>
-                  <Text style={{ color: colors.text }}>{creating ? 'Creating...' : 'Create'}</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
+    <View style={styles.container}>
+      <FlatList
+        data={communities}
+        keyExtractor={item => item.id}
+        contentContainerStyle={{ padding: 12 }}
+        ListEmptyComponent={
+          <View style={styles.empty}>
+            <Text style={styles.emptyEmoji}>🏘️</Text>
+            <Text style={styles.emptyTitle}>No communities yet</Text>
+            <Text style={styles.emptySub}>Be the first to create one!</Text>
           </View>
-        </Modal>
-      </LinearGradient>
-    </SafeAreaView>
+        }
+        renderItem={({ item }) => {
+          const isMember = user && item.members && item.members.includes(user.uid);
+          return (
+            <TouchableOpacity
+              style={styles.card}
+              onPress={() => navigation.navigate('CommunityFeed', { community: item })}
+            >
+              <View style={styles.cardIcon}>
+                <Text style={styles.cardIconText}>{item.emoji || '🌐'}</Text>
+              </View>
+              <View style={styles.cardInfo}>
+                <Text style={styles.cardName}>{item.name}</Text>
+                <Text style={styles.cardMembers}>{item.members ? item.members.length : 0} members</Text>
+              </View>
+              <TouchableOpacity
+                style={[styles.joinBtn, isMember && styles.leaveBtn]}
+                onPress={() => handleJoinLeave(item)}
+              >
+                <Text style={styles.joinBtnText}>{isMember ? 'Leave' : 'Join'}</Text>
+              </TouchableOpacity>
+            </TouchableOpacity>
+          );
+        }}
+      />
+    </View>
   );
-};
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: Colors.background },
+  empty: { alignItems: 'center', paddingTop: 60 },
+  emptyEmoji: { fontSize: 50, marginBottom: 14 },
+  emptyTitle: { color: Colors.text, fontSize: 18, fontWeight: '700', marginBottom: 6, fontFamily: 'FiraCode-Regular' },
+  emptySub: { color: Colors.textSecondary, fontSize: 14, fontFamily: 'FiraCode-Regular' },
+  card: {
+    flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.card, borderRadius: 14,
+    padding: 12, marginBottom: 10, borderWidth: 1, borderColor: Colors.border,
+  },
+  cardIcon: { width: 46, height: 46, borderRadius: 23, backgroundColor: Colors.secondary, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
+  cardIconText: { fontSize: 22 },
+  cardInfo: { flex: 1 },
+  cardName: { color: Colors.text, fontWeight: '700', fontSize: 15, marginBottom: 2, fontFamily: 'FiraCode-Regular' },
+  cardMembers: { color: Colors.textSecondary, fontSize: 12, fontFamily: 'FiraCode-Regular' },
+  joinBtn: { borderWidth: 1.5, borderColor: Colors.primary, borderRadius: 20, paddingHorizontal: 16, paddingVertical: 6 },
+  leaveBtn: { backgroundColor: Colors.primary },
+  joinBtnText: { color: Colors.text, fontSize: 12, fontWeight: '700', fontFamily: 'FiraCode-Regular' },
+});
 
 export default CommunitiesScreen;

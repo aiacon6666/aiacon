@@ -1,75 +1,119 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator, SafeAreaView } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import {
+  View, Text, StyleSheet, TextInput, TouchableOpacity,
+  ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
-import { createUserWithEmail } from '../../services/backend';
+import Colors from '../../theme/colors';
+import { useAuth } from '../../context/AuthContext';
 
-const EmailSignupScreen = () => {
-  const navigation = useNavigation();
+function EmailSignupScreen({ navigation }) {
+  const { signupEmail } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [confirm, setConfirm] = useState('');
   const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
+  const [showPass, setShowPass] = useState(false);
 
-  const handleSignup = async () => {
-    if (!email || !password || !confirmPassword) {
-      Alert.alert('Error', 'Please fill all fields');
+  async function handleContinue() {
+    if (!email.trim() || !password || !confirm) {
+      Alert.alert('Fill all fields');
       return;
     }
-    if (password !== confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match');
+    if (password !== confirm) {
+      Alert.alert('Passwords do not match');
       return;
     }
     if (password.length < 6) {
-      Alert.alert('Error', 'Password must be at least 6 characters');
+      Alert.alert('Password must be at least 6 characters');
       return;
     }
     setLoading(true);
     try {
-      const user = await createUserWithEmail(email, password);
-      navigation.replace('UsernameSetup', { userId: user.uid, email: user.email });
-    } catch (error) {
-      Alert.alert('Signup Failed', error.message);
+      const u = await signupEmail(email.trim(), password);
+      navigation.navigate('Username', { uid: u.uid, email: email.trim() });
+    } catch (e) {
+      Alert.alert('Error', e.message);
     } finally {
       setLoading(false);
     }
-  };
+  }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#050A30' }}>
-      <LinearGradient colors={['#050A30', '#0A0A14']} style={{ flex: 1, padding: 24 }}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginBottom: 20 }}>
-          <Ionicons name="arrow-back" size={28} color="#9F7AEA" />
+    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <ScrollView contentContainerStyle={styles.inner}>
+        <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
+          <Ionicons name="arrow-back" size={24} color={Colors.text} />
         </TouchableOpacity>
-        <Text style={{ fontSize: 32, color: '#FFF', fontWeight: '700', marginBottom: 8 }}>Create account</Text>
-        <Text style={{ color: '#aaa', marginBottom: 32 }}>Sign up with email and password</Text>
+        <Text style={styles.title}>Your Email</Text>
+        <Text style={styles.subtitle}>We'll use this to secure your account</Text>
 
-        <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 18, paddingHorizontal: 16, height: 56, marginBottom: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }}>
-          <Ionicons name="mail-outline" size={20} color="#888" />
-          <TextInput placeholder="Email" placeholderTextColor="#888" style={{ flex: 1, color: '#FFF', marginLeft: 12 }} value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" />
+        <View style={styles.inputWrap}>
+          <Ionicons name="mail-outline" size={18} color={Colors.textSecondary} style={{ marginRight: 10 }} />
+          <TextInput
+            style={styles.input}
+            placeholder="Email"
+            placeholderTextColor={Colors.textSecondary}
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+          />
         </View>
 
-        <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 18, paddingHorizontal: 16, height: 56, marginBottom: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }}>
-          <Ionicons name="lock-closed-outline" size={20} color="#888" />
-          <TextInput placeholder="Password" placeholderTextColor="#888" style={{ flex: 1, color: '#FFF', marginLeft: 12 }} secureTextEntry={!showPassword} value={password} onChangeText={setPassword} />
-          <TouchableOpacity onPress={() => setShowPassword(!showPassword)}><Ionicons name={showPassword ? 'eye-outline' : 'eye-off-outline'} size={20} color="#888" /></TouchableOpacity>
+        <View style={styles.inputWrap}>
+          <Ionicons name="lock-closed-outline" size={18} color={Colors.textSecondary} style={{ marginRight: 10 }} />
+          <TextInput
+            style={styles.input}
+            placeholder="Password"
+            placeholderTextColor={Colors.textSecondary}
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry={!showPass}
+          />
+          <TouchableOpacity onPress={() => setShowPass(!showPass)}>
+            <Ionicons name={showPass ? 'eye-off-outline' : 'eye-outline'} size={18} color={Colors.textSecondary} />
+          </TouchableOpacity>
         </View>
 
-        <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 18, paddingHorizontal: 16, height: 56, marginBottom: 24, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }}>
-          <Ionicons name="lock-closed-outline" size={20} color="#888" />
-          <TextInput placeholder="Confirm Password" placeholderTextColor="#888" style={{ flex: 1, color: '#FFF', marginLeft: 12 }} secureTextEntry={!showConfirm} value={confirmPassword} onChangeText={setConfirmPassword} />
-          <TouchableOpacity onPress={() => setShowConfirm(!showConfirm)}><Ionicons name={showConfirm ? 'eye-outline' : 'eye-off-outline'} size={20} color="#888" /></TouchableOpacity>
+        <View style={styles.inputWrap}>
+          <Ionicons name="lock-closed-outline" size={18} color={Colors.textSecondary} style={{ marginRight: 10 }} />
+          <TextInput
+            style={styles.input}
+            placeholder="Confirm Password"
+            placeholderTextColor={Colors.textSecondary}
+            value={confirm}
+            onChangeText={setConfirm}
+            secureTextEntry={!showPass}
+          />
         </View>
 
-        <TouchableOpacity onPress={handleSignup} disabled={loading} style={{ backgroundColor: '#5B4BFF', borderRadius: 30, height: 56, justifyContent: 'center', alignItems: 'center' }}>
-          {loading ? <ActivityIndicator color="#fff" /> : <Text style={{ color: '#fff', fontSize: 16, fontWeight: '600' }}>Sign Up</Text>}
+        <TouchableOpacity style={styles.continueBtn} onPress={handleContinue} disabled={loading}>
+          {loading ? <ActivityIndicator color={Colors.text} /> : <Text style={styles.continueBtnText}>Continue →</Text>}
         </TouchableOpacity>
-      </LinearGradient>
-    </SafeAreaView>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
-};
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: Colors.background },
+  inner: { padding: 24, paddingTop: 70 },
+  backBtn: { position: 'absolute', top: 20, left: 0 },
+  title: { color: Colors.text, fontSize: 26, fontWeight: '700', marginBottom: 6, marginTop: 30, fontFamily: 'FiraCode-Regular' },
+  subtitle: { color: Colors.textSecondary, fontSize: 14, marginBottom: 28, fontFamily: 'FiraCode-Regular' },
+  inputWrap: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: Colors.card, borderRadius: 12,
+    paddingHorizontal: 14, paddingVertical: 13,
+    marginBottom: 14, borderWidth: 1, borderColor: Colors.border,
+  },
+  input: { flex: 1, color: Colors.text, fontSize: 15, fontFamily: 'FiraCode-Regular' },
+  continueBtn: {
+    backgroundColor: Colors.primary, borderRadius: 14,
+    paddingVertical: 14, alignItems: 'center', marginTop: 8,
+  },
+  continueBtnText: { color: Colors.text, fontSize: 16, fontWeight: '700', fontFamily: 'FiraCode-Regular' },
+});
 
 export default EmailSignupScreen;

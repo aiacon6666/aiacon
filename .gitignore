@@ -1,9 +1,16 @@
 node_modules/
 .expo/
-ios/
-.env
+dist/
+npm-debug.*
 *.jks
-*.keystore
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+web-build/
+.env
+android/
+ios/
 .DS_Store
-
-# Central API keys file
+*.log

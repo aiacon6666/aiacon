@@ -1,90 +1,97 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { FlatList, ActivityIndicator, View, Text, RefreshControl } from 'react-native';
-import { fetchPosts } from '../services/backend';
-import { fetchLongYouTubeVideos } from '../services/music';
+import { FlatList, ActivityIndicator, View, StyleSheet, RefreshControl, Text } from 'react-native';
 import PostCard from './PostCard';
-import YouTubeBroadcastCard from './YouTubeBroadcastCard';
-import { colors } from '../theme/colors';
+import { fetchPosts } from '../services/backend';
+import Colors from '../theme/colors';
 
-const ForYouFeed = () => {
+function ForYouFeed() {
   const [posts, setPosts] = useState([]);
+  const [lastDoc, setLastDoc] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [lastDoc, setLastDoc] = useState(null);
   const [hasMore, setHasMore] = useState(true);
 
-  const loadPosts = async (refresh = false) => {
-    if (!refresh && !hasMore) return;
-    setLoading(true);
-    try {
-      // Fetch user posts
-      const { posts: newPosts, lastVisible } = await fetchPosts(refresh ? null : lastDoc);
-      let combined = refresh ? newPosts : [...posts, ...newPosts];
-      
-      // If combined is empty or very few, fetch YouTube videos
-      if (combined.length < 5) {
-        const youtubeVideos = await fetchLongYouTubeVideos(10);
-        const youtubeItems = youtubeVideos.map(video => ({
-          id: `yt_${video.id}`,
-          type: 'youtube_broadcast',
-          videoData: video,
-        }));
-        // Merge: user posts first, then YouTube
-        combined = [...combined, ...youtubeItems];
-      }
-      
-      setPosts(combined);
-      setLastDoc(lastVisible);
-      setHasMore(newPosts.length > 0);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
-
-  const onRefresh = useCallback(() => {
-    setRefreshing(true);
-    loadPosts(true);
-  }, []);
-
   useEffect(() => {
-    loadPosts(true);
+    loadInitial();
   }, []);
 
-  const renderItem = ({ item }) => {
-    if (item.type === 'youtube_broadcast') {
-      return (
-        <YouTubeBroadcastCard
-          video={item.videoData}
-          onLike={() => {}}
-          onRepost={() => {}}
-          onComment={() => {}}
-          onShare={() => {}}
-          onMenu={() => {}}
-        />
-      );
-    }
-    return <PostCard post={item} onUpdate={() => loadPosts(true)} />;
-  };
+  async function loadInitial() {
+    setLoading(true);
+    const result = await fetchPosts(null, 10);
+    setPosts(result.posts);
+    setLastDoc(result.lastDoc);
+    setHasMore(result.posts.length === 10);
+    setLoading(false);
+  }
 
-  if (loading && posts.length === 0) {
-    return <ActivityIndicator size="large" color={colors.lavender} style={{ flex: 1, justifyContent: 'center' }} />;
+  async function loadMore() {
+    if (!hasMore || loading) return;
+    setLoading(true);
+    const result = await fetchPosts(lastDoc, 10);
+    setPosts(prev => [...prev, ...result.posts]);
+    setLastDoc(result.lastDoc);
+    setHasMore(result.posts.length === 10);
+    setLoading(false);
+  }
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    const result = await fetchPosts(null, 10);
+    setPosts(result.posts);
+    setLastDoc(result.lastDoc);
+    setHasMore(result.posts.length === 10);
+    setRefreshing(false);
+  }, []);
+
+  function renderItem({ item }) {
+    return <PostCard post={item} />;
+  }
+
+  function renderFooter() {
+    if (!loading) return null;
+    return <ActivityIndicator color={Colors.accent} style={{ marginVertical: 20 }} />;
+  }
+
+  function renderEmpty() {
+    if (loading) return null;
+    return (
+      <View style={styles.empty}>
+        <Text style={styles.emptyText}>No posts yet. Be the first! 🚀</Text>
+      </View>
+    );
   }
 
   return (
     <FlatList
       data={posts}
-      renderItem={renderItem}
       keyExtractor={item => item.id}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.lavender} />}
-      onEndReached={() => loadPosts()}
-      onEndReachedThreshold={0.5}
-      ListFooterComponent={loading && posts.length > 0 ? <ActivityIndicator size="small" color={colors.lavender} style={{ margin: 20 }} /> : null}
-      ListEmptyComponent={<View style={{ padding: 20 }}><Text style={{ color: colors.text, textAlign: 'center' }}>No posts yet. Check back later!</Text></View>}
+      renderItem={renderItem}
+      getItemLayout={(data, index) => ({ length: 300, offset: 300 * index, index })}
+      onEndReached={loadMore}
+      onEndReachedThreshold={0.4}
+      ListFooterComponent={renderFooter}
+      ListEmptyComponent={renderEmpty}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.accent} />}
+      showsVerticalScrollIndicator={false}
+      style={styles.list}
     />
   );
-};
+}
+
+const styles = StyleSheet.create({
+  list: {
+    flex: 1,
+    backgroundColor: Colors.background,
+  },
+  empty: {
+    flex: 1,
+    alignItems: 'center',
+    paddingTop: 80,
+  },
+  emptyText: {
+    color: Colors.textSecondary,
+    fontSize: 16,
+  },
+});
 
 export default ForYouFeed;

@@ -1,158 +1,161 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  View,
-  Text,
-  FlatList,
-  Dimensions,
-  TouchableOpacity,
-  ActivityIndicator,
-  SafeAreaView,
-  StatusBar,
-  Platform,
+  View, Text, StyleSheet, Dimensions, FlatList,
+  TouchableOpacity, ActivityIndicator,
 } from 'react-native';
 import { WebView } from 'react-native-webview';
-import { Ionicons } from '@expo/vector-icons';
-import { fetchTrendingShorts, fetchVideoDetails } from '../services/music';
+import { Ionicons, MaterialCommunityIcons, Feather } from '@expo/vector-icons';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import axios from 'axios';
+import Colors from '../theme/colors';
+import { YOUTUBE_API_KEY } from '../config/keys';
+import FastImage from 'react-native-fast-image';
 
-const { width, height } = Dimensions.get('window');
+const SCREEN_H = Dimensions.get('window').height;
+const SCREEN_W = Dimensions.get('window').width;
 
-const VidsScreen = () => {
+function VideoItem({ video, isFocused }) {
+  const [liked, setLiked] = useState(false);
+
+  return (
+    <View style={styles.videoContainer}>
+      {isFocused ? (
+        <WebView
+          style={styles.player}
+          source={{ uri: `https://www.youtube.com/embed/${video.id}?autoplay=1&controls=0&playsinline=1&rel=0` }}
+          allowsFullscreenVideo
+          javaScriptEnabled
+          mediaPlaybackRequiresUserAction={false}
+        />
+      ) : (
+        <FastImage source={{ uri: video.thumbnail }} style={styles.player} resizeMode={FastImage.resizeMode.cover} />
+      )}
+
+      {/* Overlay */}
+      <View style={styles.overlay}>
+        <View style={styles.authorInfo}>
+          <Text style={styles.channelName}>{video.channelTitle}</Text>
+          <Text style={styles.videoTitle} numberOfLines={2}>{video.title}</Text>
+        </View>
+
+        <View style={styles.actions}>
+          <TouchableOpacity style={styles.actionItem} onPress={() => setLiked(!liked)}>
+            <Ionicons name={liked ? 'heart' : 'heart-outline'} size={28} color={liked ? '#FF4466' : Colors.text} />
+            <Text style={styles.actionLabel}>{video.likeCount || '—'}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.actionItem}>
+            <Ionicons name="chatbubble-outline" size={26} color={Colors.text} />
+            <Text style={styles.actionLabel}>Thoughts</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.actionItem}>
+            <MaterialCommunityIcons name="repeat" size={26} color={Colors.text} />
+            <Text style={styles.actionLabel}>Repost</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.actionItem}>
+            <Feather name="share-2" size={24} color={Colors.text} />
+            <Text style={styles.actionLabel}>Share</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.actionItem}>
+            <Ionicons name="ellipsis-horizontal" size={24} color={Colors.text} />
+            <Text style={styles.actionLabel}>More</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      <TouchableOpacity style={styles.followBtn}>
+        <Text style={styles.followText}>Follow</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+function VidsScreen() {
   const [videos, setVideos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const flatListRef = useRef(null);
 
   useEffect(() => {
-    loadVideos();
+    fetchShorts();
   }, []);
 
-  const loadVideos = async () => {
-    setLoading(true);
+  async function fetchShorts() {
     try {
-      const shorts = await fetchTrendingShorts('US', 20);
-      const enriched = await Promise.all(
-        shorts.map(async (video) => {
-          const details = await fetchVideoDetails(video.id);
-          return {
-            ...video,
-            duration: details?.contentDetails?.duration,
-            views: details?.statistics?.viewCount,
-          };
-        })
-      );
-      setVideos(enriched);
-    } catch (error) {
-      console.error('Error loading shorts:', error);
+      const res = await axios.get('https://www.googleapis.com/youtube/v3/search', {
+        params: {
+          part: 'snippet',
+          type: 'video',
+          videoDuration: 'short',
+          maxResults: 15,
+          q: 'viral trending short',
+          key: YOUTUBE_API_KEY,
+          order: 'viewCount',
+        },
+      });
+      const items = res.data.items.map(item => ({
+        id: item.id.videoId,
+        title: item.snippet.title,
+        channelTitle: item.snippet.channelTitle,
+        thumbnail: item.snippet.thumbnails.high.url,
+      }));
+      setVideos(items);
+    } catch (e) {
+      console.log('YouTube fetch error', e.message);
+      setVideos([
+        { id: 'dQw4w9WgXcQ', title: 'Sample Short 1', channelTitle: 'AiaCon', thumbnail: 'https://img.youtube.com/vi/dQw4w9WgXcQ/hqdefault.jpg' },
+        { id: '9bZkp7q19f0', title: 'Sample Short 2', channelTitle: 'Snaluca', thumbnail: 'https://img.youtube.com/vi/9bZkp7q19f0/hqdefault.jpg' },
+      ]);
     } finally {
       setLoading(false);
     }
-  };
+  }
 
-  const onViewableItemsChanged = useRef(({ viewableItems }) => {
+  function onViewableChanged({ viewableItems }) {
     if (viewableItems.length > 0) setCurrentIndex(viewableItems[0].index);
-  }).current;
-
-  const viewabilityConfig = { itemVisiblePercentThreshold: 50 };
-
-  const renderItem = ({ item, index }) => {
-    // YouTube embed URL – plays inline, no controls overlay (we overlay our own UI)
-    const embedUrl = `https://www.youtube.com/embed/${item.id}?autoplay=${index === currentIndex ? 1 : 0}&controls=0&modestbranding=1&rel=0&playsinline=1&enablejsapi=1`;
-    return (
-      <View style={styles.videoContainer}>
-        <WebView
-          source={{ uri: embedUrl }}
-          style={styles.webview}
-          allowsFullscreenVideo={false}
-          allowsInlineMediaPlayback={true}
-          javaScriptEnabled={true}
-          onError={(e) => console.log('WebView error', e)}
-        />
-        {/* Overlay UI */}
-        <View style={styles.overlay}>
-          <View style={styles.topBar}>
-            <Text style={styles.username}>@{item.channelTitle.replace(/\s/g, '')}</Text>
-            <TouchableOpacity style={styles.followButton}>
-              <Text style={styles.followText}>Follow</Text>
-            </TouchableOpacity>
-          </View>
-          <View style={styles.bottomBar}>
-            <TouchableOpacity style={styles.actionButton}>
-              <Ionicons name="heart-outline" size={28} color="#fff" />
-              <Text style={styles.actionText}>Like</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.actionButton}>
-              <Ionicons name="repeat-outline" size={28} color="#fff" />
-              <Text style={styles.actionText}>Repost</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.actionButton}>
-              <Ionicons name="chatbubble-outline" size={28} color="#fff" />
-              <Text style={styles.actionText}>Thoughts</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.actionButton}>
-              <Ionicons name="share-outline" size={28} color="#fff" />
-              <Text style={styles.actionText}>Share</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.actionButton}>
-              <Ionicons name="ellipsis-horizontal" size={28} color="#fff" />
-              <Text style={styles.actionText}>More</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
-    );
-  };
+  }
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.loaderContainer}>
-        <ActivityIndicator size="large" color="#9F7AEA" />
-        <Text style={styles.loaderText}>Loading Vids...</Text>
-      </SafeAreaView>
+      <View style={styles.loadingWrap}>
+        <ActivityIndicator color={Colors.accent} size="large" />
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar hidden />
+    <SafeAreaView style={styles.container} edges={['top']}>
       <FlatList
-        ref={flatListRef}
         data={videos}
-        renderItem={renderItem}
-        keyExtractor={(item) => item.id}
+        keyExtractor={item => item.id}
         pagingEnabled
         showsVerticalScrollIndicator={false}
-        onViewableItemsChanged={onViewableItemsChanged}
-        viewabilityConfig={viewabilityConfig}
-        snapToInterval={height}
+        snapToAlignment="start"
         decelerationRate="fast"
+        onViewableItemsChanged={onViewableChanged}
+        viewabilityConfig={{ itemVisiblePercentThreshold: 80 }}
+        renderItem={({ item, index }) => <VideoItem video={item} isFocused={index === currentIndex} />}
       />
     </SafeAreaView>
   );
-};
+}
 
-const styles = {
+const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#000' },
-  loaderContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#000' },
-  loaderText: { color: '#9F7AEA', marginTop: 10, fontSize: 16, fontFamily: 'FiraCode-Regular' },
-  videoContainer: { width, height, backgroundColor: '#000', position: 'relative' },
-  webview: { flex: 1, backgroundColor: '#000' },
+  loadingWrap: { flex: 1, backgroundColor: Colors.background, justifyContent: 'center', alignItems: 'center' },
+  videoContainer: { width: SCREEN_W, height: SCREEN_H, backgroundColor: '#000' },
+  player: { width: '100%', height: '100%', backgroundColor: '#000' },
   overlay: {
-    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-    justifyContent: 'space-between', paddingTop: 60, paddingBottom: 80, paddingHorizontal: 16,
+    position: 'absolute', bottom: 0, left: 0, right: 0,
+    flexDirection: 'row', alignItems: 'flex-end', padding: 16, paddingBottom: 30,
+    backgroundColor: 'rgba(0,0,0,0.3)',
   },
-  topBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  username: {
-    color: '#fff', fontSize: 18, fontWeight: '600', fontFamily: 'FiraCode-Regular',
-    textShadowColor: 'rgba(0,0,0,0.75)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2,
-  },
-  followButton: { backgroundColor: '#5B4BFF', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },
-  followText: { color: '#fff', fontWeight: '600', fontSize: 14, fontFamily: 'FiraCode-Regular' },
-  bottomBar: { flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center' },
-  actionButton: { alignItems: 'center' },
-  actionText: {
-    color: '#fff', fontSize: 12, marginTop: 4, fontFamily: 'FiraCode-Regular',
-    textShadowColor: 'rgba(0,0,0,0.5)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2,
-  },
-};
+  authorInfo: { flex: 1, marginRight: 12 },
+  channelName: { color: Colors.text, fontWeight: '700', fontSize: 14, marginBottom: 4, fontFamily: 'FiraCode-Regular' },
+  videoTitle: { color: 'rgba(255,255,255,0.85)', fontSize: 13, lineHeight: 18, fontFamily: 'FiraCode-Regular' },
+  actions: { alignItems: 'center' },
+  actionItem: { alignItems: 'center', marginBottom: 18 },
+  actionLabel: { color: Colors.text, fontSize: 11, marginTop: 3, fontFamily: 'FiraCode-Regular' },
+  followBtn: { position: 'absolute', top: 60, right: 16, borderWidth: 1.5, borderColor: Colors.text, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 5 },
+  followText: { color: Colors.text, fontSize: 12, fontWeight: '700', fontFamily: 'FiraCode-Regular' },
+});
 
 export default VidsScreen;

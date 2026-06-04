@@ -1,36 +1,42 @@
 version: 2.1
 
 orbs:
-  node: circleci/node@5.1.0
+  node: circleci/node@5.2.0
 
 jobs:
   build-android:
-    docker:
-      - image: cimg/android:2024.04.1
+    machine:
+      image: ubuntu-2204:current
     resource_class: large
     steps:
       - checkout
-      - run:
-          name: Install Ninja (if not present)
-          command: |
-            sudo apt-get update
-            sudo apt-get install -y ninja-build
       - node/install:
-          node-version: '20.19'
-      - node/install-packages:
-          pkg-manager: npm
+          node-version: '20.14.0'
       - run:
-          name: Install Expo and EAS CLI
-          command: npm install -g expo-cli eas-cli
+          name: Install dependencies
+          command: npm install
       - run:
-          name: Build Android APK locally
-          command: eas build --platform android --local --non-interactive --output=app.apk
+          name: Install ninja-build
+          command: sudo apt-get update && sudo apt-get install -y ninja-build
+      - run:
+          name: Install EAS CLI
+          command: npm install -g eas-cli
+      - run:
+          name: EAS Login
+          command: echo "$EXPO_TOKEN" | eas whoami || true
+      - run:
+          name: Build Android APK
+          command: eas build --platform android --local --non-interactive --output ./build/aiacon.apk
+          environment:
+            EXPO_TOKEN: $EXPO_TOKEN
       - store_artifacts:
-          path: app.apk
-          destination: android-build
+          path: ./build/aiacon.apk
+          destination: aiacon-debug.apk
 
 workflows:
-  version: 2
   build:
     jobs:
-      - build-android
+      - build-android:
+          filters:
+            branches:
+              only: main

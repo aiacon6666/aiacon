@@ -1,136 +1,146 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  ScrollView,
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  Alert,
+  View, Text, StyleSheet, TextInput, TouchableOpacity,
+  FlatList, ActivityIndicator, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { GoogleGenerativeAI } from '@google/generative-ai';
-import * as Speech from 'expo-speech-recognition';
-import { colors } from '../theme/colors';
-import { geminiApiKey } from '../config/keys';
+import Colors from '../theme/colors';
+import { GEMINI_API_KEY } from '../config/keys';
+import axios from 'axios';
 
-const genAI = new GoogleGenerativeAI(geminiApiKey);
-
-const GeminiLive = ({ visible, onClose, initialContext, screenData = {} }) => {
-  const [query, setQuery] = useState('');
+function GeminiLive() {
+  const [messages, setMessages] = useState([
+    { role: 'assistant', content: 'Hey! I\'m your AiaCon AI. Ask me anything ✨' }
+  ]);
+  const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [conversation, setConversation] = useState([]);
-  const [isListening, setIsListening] = useState(false);
-  const [voiceSupported, setVoiceSupported] = useState(false);
+  const flatListRef = useRef(null);
 
-  useEffect(() => {
-    const checkVoice = async () => {
-      const available = await Speech.isAvailableAsync();
-      setVoiceSupported(available);
-    };
-    if (visible) checkVoice();
-  }, [visible]);
-
-  const sendMessage = async (text) => {
-    const userText = text || query.trim();
-    if (!userText) return;
-    setQuery('');
-    const userMessage = { role: 'user', text: userText };
-    setConversation(prev => [...prev, userMessage]);
+  async function sendMessage() {
+    const trimmed = input.trim();
+    if (!trimmed || loading) return;
+    setInput('');
+    const userMsg = { role: 'user', content: trimmed };
+    setMessages(prev => [...prev, userMsg]);
     setLoading(true);
+
     try {
-      const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
-      // Build context from screen data (e.g., video description, product info)
-      let contextString = '';
-      if (screenData.videoTitle) contextString += `Current video: "${screenData.videoTitle}". `;
-      if (screenData.product) contextString += `Product visible: ${screenData.product.name}, price: ${screenData.product.price}. `;
-      if (screenData.context) contextString += screenData.context;
-      const fullPrompt = contextString ? `Context: ${contextString}\nUser: ${userText}` : userText;
-      const result = await model.generateContent(fullPrompt);
-      const reply = result.response.text();
-      setConversation(prev => [...prev, { role: 'assistant', text: reply }]);
-    } catch (error) {
-      console.error(error);
-      let errorMsg = 'Sorry, I encountered an error. Please try again.';
-      if (error.message?.includes('API key')) errorMsg = 'Gemini API key is invalid or missing.';
-      setConversation(prev => [...prev, { role: 'assistant', text: errorMsg }]);
+      const history = [...messages, userMsg].map(m => ({
+        role: m.role === 'assistant' ? 'model' : 'user',
+        parts: [{ text: m.content }],
+      }));
+
+      const res = await axios.post(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+        { contents: history },
+        { headers: { 'Content-Type': 'application/json' } }
+      );
+
+      const reply = res.data.candidates[0].content.parts[0].text;
+      setMessages(prev => [...prev, { role: 'assistant', content: reply }]);
+    } catch (err) {
+      setMessages(prev => [...prev, { role: 'assistant', content: 'Sorry, something went wrong. Try again.' }]);
     } finally {
       setLoading(false);
+      setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
     }
-  };
+  }
 
-  const startListening = async () => {
-    if (!voiceSupported) {
-      Alert.alert('Voice not supported', 'Speech recognition is not available on this device.');
-      return;
-    }
-    try {
-      const { granted } = await Speech.requestPermissionsAsync();
-      if (!granted) {
-        Alert.alert('Permission needed', 'Microphone access is required for voice input.');
-        return;
-      }
-      setIsListening(true);
-      const result = await Speech.startListeningAsync({
-        onResult: (text) => {
-          setQuery(text);
-          setIsListening(false);
-        },
-        onError: (error) => {
-          console.error(error);
-          setIsListening(false);
-        },
-      });
-    } catch (error) {
-      console.error(error);
-      setIsListening(false);
-    }
-  };
-
-  if (!visible) return null;
+  function renderMessage({ item }) {
+    const isUser = item.role === 'user';
+    return (
+      <View style={[styles.bubble, isUser ? styles.userBubble : styles.aiBubble]}>
+        <Text style={[styles.bubbleText, isUser && styles.userBubbleText]}>{item.content}</Text>
+      </View>
+    );
+  }
 
   return (
-    <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: '#000000', zIndex: 1000 }}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
-        <View style={{ paddingTop: 50, paddingHorizontal: 16, flex: 1 }}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-            <Text style={{ color: colors.lavender, fontSize: 18, fontWeight: '600', fontFamily: 'FiraCode-Regular' }}>Gemini Live</Text>
-            <TouchableOpacity onPress={onClose}>
-              <Ionicons name="close" size={28} color={colors.text} />
-            </TouchableOpacity>
-          </View>
-          <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
-            {conversation.map((msg, idx) => (
-              <View key={idx} style={{ marginBottom: 12, alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start', backgroundColor: msg.role === 'user' ? colors.primary : colors.card, borderRadius: 12, padding: 10, maxWidth: '80%' }}>
-                <Text style={{ color: colors.text }}>{msg.text}</Text>
-              </View>
-            ))}
-            {loading && <ActivityIndicator size="small" color={colors.lavender} />}
-          </ScrollView>
-          <View style={{ flexDirection: 'row', paddingVertical: 10, borderTopWidth: 1, borderTopColor: colors.border }}>
-            <TextInput
-              style={{ flex: 1, backgroundColor: colors.card, borderRadius: 20, paddingHorizontal: 16, paddingVertical: 10, color: colors.text, marginRight: 8 }}
-              placeholder="Ask Gemini..."
-              placeholderTextColor={colors.textSecondary}
-              value={query}
-              onChangeText={setQuery}
-              onSubmitEditing={() => sendMessage()}
-            />
-            {voiceSupported && (
-              <TouchableOpacity onPress={startListening} style={{ justifyContent: 'center', marginRight: 8 }}>
-                <Ionicons name={isListening ? "mic" : "mic-outline"} size={24} color={isListening ? colors.error : colors.lavender} />
-              </TouchableOpacity>
-            )}
-            <TouchableOpacity onPress={() => sendMessage()} style={{ justifyContent: 'center' }}>
-              <Ionicons name="send" size={24} color={colors.lavender} />
-            </TouchableOpacity>
-          </View>
-        </View>
-      </KeyboardAvoidingView>
-    </View>
+    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <FlatList
+        ref={flatListRef}
+        data={messages}
+        keyExtractor={(_, i) => i.toString()}
+        renderItem={renderMessage}
+        contentContainerStyle={styles.list}
+        onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
+      />
+      {loading && <ActivityIndicator color={Colors.accent} style={{ marginBottom: 8 }} />}
+      <View style={styles.inputRow}>
+        <TextInput
+          style={styles.input}
+          placeholder="Ask anything..."
+          placeholderTextColor={Colors.textSecondary}
+          value={input}
+          onChangeText={setInput}
+          onSubmitEditing={sendMessage}
+        />
+        <TouchableOpacity style={styles.sendBtn} onPress={sendMessage} disabled={loading}>
+          <Ionicons name="send" size={20} color={Colors.text} />
+        </TouchableOpacity>
+      </View>
+    </KeyboardAvoidingView>
   );
-};
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: Colors.background,
+  },
+  list: {
+    padding: 16,
+  },
+  bubble: {
+    maxWidth: '85%',
+    borderRadius: 16,
+    padding: 12,
+    marginVertical: 4,
+  },
+  userBubble: {
+    backgroundColor: Colors.primary,
+    alignSelf: 'flex-end',
+    borderBottomRightRadius: 4,
+  },
+  aiBubble: {
+    backgroundColor: Colors.card,
+    alignSelf: 'flex-start',
+    borderBottomLeftRadius: 4,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  bubbleText: {
+    color: Colors.text,
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  userBubbleText: {
+    color: '#fff',
+  },
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
+    backgroundColor: Colors.card,
+  },
+  input: {
+    flex: 1,
+    color: Colors.text,
+    fontSize: 14,
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+  },
+  sendBtn: {
+    backgroundColor: Colors.primary,
+    borderRadius: 22,
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 8,
+  },
+});
 
 export default GeminiLive;

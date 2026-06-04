@@ -1,60 +1,49 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Users: only owner can read/write, but onboardingCompleted can be read by app
-    match /users/{userId} {
-      allow read: if request.auth != null && request.auth.uid == userId;
-      allow write: if request.auth != null && request.auth.uid == userId;
+    function isSignedIn() {
+      return request.auth != null;
     }
-    // Usernames: public read, write only via Cloud Function (deny direct)
-    match /usernames/{username} {
-      allow read: if true;
-      allow write: if false;
+    function isOwner(uid) {
+      return request.auth.uid == uid;
     }
-    // User sessions (for multi-device management)
-    match /sessions/{sessionId} {
-      allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
+
+    match /users/{uid} {
+      allow read: if isSignedIn();
+      allow write: if isOwner(uid);
     }
-    // Deny all others
-    match /{document=**} {
-      allow read, write: if false;
+    match /posts/{postId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update, delete: if isSignedIn() && resource.data.authorId == request.auth.uid;
+    }
+    match /stories/{storyId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn();
+      allow delete: if isSignedIn() && resource.data.authorId == request.auth.uid;
+    }
+    match /conversations/{convId} {
+      allow read, write: if isSignedIn() && request.auth.uid in resource.data.members;
+      allow create: if isSignedIn();
+    }
+    match /conversations/{convId}/messages/{msgId} {
+      allow read, write: if isSignedIn();
+    }
+    match /communities/{commId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+    }
+    match /squads/{squadId} {
+      allow read, write: if isSignedIn();
+    }
+    match /notifications/{notifId} {
+      allow read: if isSignedIn() && resource.data.toUid == request.auth.uid;
+      allow write: if isSignedIn();
+    }
+    match /auraTransactions/{txId} {
+      allow read: if isSignedIn() && resource.data.uid == request.auth.uid;
+      allow write: if isSignedIn();
     }
   }
-}
-
-// Social collections
-match /posts/{postId} {
-  allow read: if true;
-  allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
-  allow update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
-}
-match /posts/{postId}/likes/{likeId} {
-  allow read: if true;
-  allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
-  allow delete: if request.auth != null && request.auth.uid == resource.data.userId;
-}
-match /feeds/{feedId} {
-  allow read: if request.auth != null && request.auth.uid == resource.data.userId;
-  allow write: if false; // only Cloud Function
-}
-match /stories/{storyId} {
-  allow read: if true;
-  allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
-  allow delete: if request.auth != null && request.auth.uid == resource.data.userId;
-}
-match /messages/{messageId} {
-  allow read: if request.auth != null && resource.data.conversationId in get(/databases/$(database)/documents/conversations/$(resource.data.conversationId)).data.participants;
-  allow create: if request.auth != null;
-}
-match /conversations/{convId} {
-  allow read: if request.auth != null && resource.data.participants has request.auth.uid;
-  allow create: if request.auth != null;
-}
-match /notifications/{notificationId} {
-  allow read: if request.auth != null && resource.data.userId == request.auth.uid;
-  allow write: if false;
-}
-match /userSearch/{userId} {
-  allow read: if true;
-  allow write: if false;
 }

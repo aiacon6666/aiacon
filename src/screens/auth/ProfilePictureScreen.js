@@ -1,91 +1,126 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, SafeAreaView, Image, Alert } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import {
+  View, Text, StyleSheet, TouchableOpacity, Image,
+  FlatList, ActivityIndicator, Alert,
+} from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { uploadProfileImage, saveUserDataToFirestore } from '../../services/backend';
+import { Ionicons } from '@expo/vector-icons';
+import Colors from '../../theme/colors';
+import { useAuth } from '../../context/AuthContext';
+import { serverTimestamp } from 'firebase/firestore';
 
-const ProfilePictureScreen = () => {
-  const navigation = useNavigation();
-  const route = useRoute();
-  const { userId, email, username, fullName, dob, gender, bio, song } = route.params;
-  const [image, setImage] = useState(null);
-  const [uploading, setUploading] = useState(false);
+const DEFAULT_AVATARS = [
+  'https://ui-avatars.com/api/?name=A&background=0047AB&color=fff&size=128',
+  'https://ui-avatars.com/api/?name=B&background=3F0D6C&color=fff&size=128',
+  'https://ui-avatars.com/api/?name=C&background=880E4F&color=fff&size=128',
+  'https://ui-avatars.com/api/?name=D&background=004D40&color=fff&size=128',
+  'https://ui-avatars.com/api/?name=E&background=BF360C&color=fff&size=128',
+  'https://ui-avatars.com/api/?name=F&background=1A237E&color=fff&size=128',
+];
 
-  const pickImage = async (source) => {
-    const result = await (source === 'camera' ? ImagePicker.launchCameraAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images }) : ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images }));
-    if (!result.canceled) {
-      setImage(result.assets[0].uri);
+function ProfilePictureScreen({ navigation, route }) {
+  const params = route.params || {};
+  const { saveProfile } = useAuth();
+  const [avatar, setAvatar] = useState(DEFAULT_AVATARS[0]);
+  const [saving, setSaving] = useState(false);
+
+  async function pickFromGallery() {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.8,
+    });
+    if (!result.canceled && result.assets.length > 0) {
+      setAvatar(result.assets[0].uri);
     }
-  };
+  }
 
-  const handleFinish = async () => {
-    setUploading(true);
+  async function handleFinish() {
+    setSaving(true);
     try {
-      let photoURL = null;
-      if (image) {
-        photoURL = await uploadProfileImage(image, userId);
-      } else {
-        photoURL = 'https://firebasestorage.googleapis.com/v0/b/aiacon.appspot.com/o/default-avatar.png?alt=media';
-      }
-      const userData = {
-        userId,
-        email,
-        username,
-        fullName,
-        dateOfBirth: dob,
-        gender,
-        bio,
-        song: song ? { name: song.name, url: song.uri } : null,
-        profilePicture: photoURL,
-        createdAt: new Date(),
-        onboardingCompleted: false,
-      };
-      await saveUserDataToFirestore(userId, userData);
-      navigation.reset({ index: 0, routes: [{ name: 'Onboarding' }] });
-    } catch (error) {
-      Alert.alert('Error', error.message);
+      await saveProfile(params.uid, {
+        uid: params.uid,
+        email: params.email || '',
+        username: params.username || '',
+        displayName: params.displayName || '',
+        dob: params.dob || '',
+        gender: params.gender || '',
+        bio: params.bio || '',
+        link: params.link || '',
+        avatar: avatar,
+        aura: 0,
+        followers: [],
+        following: [],
+        isGuest: false,
+        createdAt: serverTimestamp(),
+      });
+      // After saving profile, navigate to main app (Home)
+      navigation.replace('Main');
+    } catch (e) {
+      Alert.alert('Error', e.message);
     } finally {
-      setUploading(false);
+      setSaving(false);
     }
-  };
-
-  const skipPicture = () => handleFinish();
+  }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#050A30' }}>
-      <LinearGradient colors={['#050A30', '#0A0A14']} style={{ flex: 1, padding: 24 }}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginBottom: 20 }}>
-          <Ionicons name="arrow-back" size={28} color="#9F7AEA" />
-        </TouchableOpacity>
-        <Text style={{ fontSize: 32, color: '#FFF', fontWeight: '700', marginBottom: 8 }}>Profile picture</Text>
-        <Text style={{ color: '#aaa', marginBottom: 32 }}>Add a photo or skip for default</Text>
+    <View style={styles.container}>
+      <TouchableOpacity style={styles.back} onPress={() => navigation.goBack()}>
+        <Ionicons name="arrow-back" size={24} color={Colors.text} />
+      </TouchableOpacity>
+      <Text style={styles.step}>Step 6 of 6</Text>
+      <Text style={styles.title}>Profile Picture</Text>
+      <Text style={styles.subtitle}>Pick one or upload your own.</Text>
 
-        <View style={{ alignItems: 'center', marginBottom: 32 }}>
-          <View style={{ width: 120, height: 120, borderRadius: 60, backgroundColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', alignItems: 'center', overflow: 'hidden' }}>
-            {image ? <Image source={{ uri: image }} style={{ width: 120, height: 120 }} /> : <Ionicons name="person-circle-outline" size={80} color="#9F7AEA" />}
-          </View>
-        </View>
+      <View style={styles.previewWrap}>
+        <Image source={{ uri: avatar }} style={styles.preview} />
+      </View>
 
-        <View style={{ flexDirection: 'row', justifyContent: 'space-around', marginBottom: 32 }}>
-          <TouchableOpacity onPress={() => pickImage('camera')} style={{ backgroundColor: 'rgba(255,255,255,0.08)', padding: 12, borderRadius: 40 }}>
-            <Ionicons name="camera-outline" size={28} color="#9F7AEA" />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => pickImage('gallery')} style={{ backgroundColor: 'rgba(255,255,255,0.08)', padding: 12, borderRadius: 40 }}>
-            <Ionicons name="images-outline" size={28} color="#9F7AEA" />
-          </TouchableOpacity>
-        </View>
+      <FlatList
+        data={DEFAULT_AVATARS}
+        keyExtractor={(_, i) => i.toString()}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ paddingHorizontal: 16, marginBottom: 16 }}
+        renderItem={({ item }) => {
+          const isSelected = avatar === item;
+          return (
+            <TouchableOpacity onPress={() => setAvatar(item)}>
+              <Image source={{ uri: item }} style={[styles.thumb, isSelected && styles.thumbSelected]} />
+            </TouchableOpacity>
+          );
+        }}
+      />
 
-        <TouchableOpacity onPress={handleFinish} disabled={uploading} style={{ backgroundColor: '#5B4BFF', borderRadius: 30, height: 56, justifyContent: 'center', alignItems: 'center', marginBottom: 16 }}>
-          <Text style={{ color: '#fff', fontSize: 16, fontWeight: '600' }}>{uploading ? 'Saving...' : 'Complete Signup'}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={skipPicture} disabled={uploading}>
-          <Text style={{ color: '#9F7AEA', textAlign: 'center' }}>Skip for now</Text>
-        </TouchableOpacity>
-      </LinearGradient>
-    </SafeAreaView>
+      <TouchableOpacity style={styles.galleryBtn} onPress={pickFromGallery}>
+        <Ionicons name="image-outline" size={18} color={Colors.accent} />
+        <Text style={styles.galleryText}>Upload from Gallery</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.btn} onPress={handleFinish} disabled={saving}>
+        {saving ? <ActivityIndicator color={Colors.text} /> : <Text style={styles.btnText}>🎉 Finish Setup</Text>}
+      </TouchableOpacity>
+    </View>
   );
-};
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: Colors.background, padding: 24, paddingTop: 70 },
+  back: { position: 'absolute', top: 50, left: 20 },
+  step: { color: Colors.accent, fontSize: 12, fontWeight: '700', letterSpacing: 2, marginBottom: 12, marginTop: 20, fontFamily: 'FiraCode-Regular' },
+  title: { color: Colors.text, fontSize: 26, fontWeight: '700', marginBottom: 6, fontFamily: 'FiraCode-Regular' },
+  subtitle: { color: Colors.textSecondary, fontSize: 14, marginBottom: 24, fontFamily: 'FiraCode-Regular' },
+  previewWrap: { alignItems: 'center', marginBottom: 20 },
+  preview: { width: 100, height: 100, borderRadius: 50, borderWidth: 3, borderColor: Colors.accent },
+  thumb: { width: 56, height: 56, borderRadius: 28, marginRight: 10, borderWidth: 2, borderColor: Colors.border },
+  thumbSelected: { borderColor: Colors.accent },
+  galleryBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    paddingVertical: 12, marginBottom: 16,
+    borderWidth: 1, borderColor: Colors.border, borderRadius: 12, backgroundColor: Colors.card,
+  },
+  galleryText: { color: Colors.accent, marginLeft: 8, fontSize: 14, fontWeight: '600', fontFamily: 'FiraCode-Regular' },
+  btn: { backgroundColor: Colors.primary, borderRadius: 14, paddingVertical: 14, alignItems: 'center' },
+  btnText: { color: Colors.text, fontSize: 16, fontWeight: '700', fontFamily: 'FiraCode-Regular' },
+});
 
 export default ProfilePictureScreen;

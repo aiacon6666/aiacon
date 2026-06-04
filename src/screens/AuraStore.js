@@ -1,99 +1,86 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, TouchableOpacity, Alert, SafeAreaView, ActivityIndicator } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import Colors from '../theme/colors';
 import { useAuth } from '../context/AuthContext';
-import { adjustAura, unlockAvatarItem } from '../services/backend';
-import { colors } from '../theme/colors';
 
-const storeItems = [
-  { id: 'hat_1', name: 'Cyber Cap', category: 'hat', auraCost: 50, icon: 'hat' },
-  { id: 'shirt_1', name: 'Neon Tee', category: 'top', auraCost: 80, icon: 'shirt' },
-  { id: 'pants_1', name: 'Tech Pants', category: 'bottom', auraCost: 70, icon: 'shirt-outline' },
-  { id: 'shoes_1', name: 'Glow Kicks', category: 'shoes', auraCost: 60, icon: 'footsteps' },
-  { id: 'accessory_1', name: 'Aura Glasses', category: 'accessory', auraCost: 40, icon: 'eye' },
-  { id: 'bg_1', name: 'Space Background', category: 'background', auraCost: 100, icon: 'planet' },
+const STORE_ITEMS = [
+  { id: '1', name: 'Neon Halo', emoji: '👾', cost: 100, description: 'A glowing neon halo for your avatar' },
+  { id: '2', name: 'Cyber Wings', emoji: '🦋', cost: 200, description: 'Luminescent cyber wings' },
+  { id: '3', name: 'Cosmic Crown', emoji: '👑', cost: 350, description: 'Wear the crown of the cosmos' },
+  { id: '4', name: 'Aura Shield', emoji: '🛡️', cost: 150, description: 'Protective Aura force field' },
+  { id: '5', name: 'Star Trail', emoji: '⭐', cost: 80, description: 'Leave a trail of stars' },
+  { id: '6', name: 'Void Cloak', emoji: '🌑', cost: 500, description: 'Become one with the void' },
 ];
 
-const AuraStore = () => {
-  const { user, userData, updateUserData } = useAuth();
-  const [loading, setLoading] = useState(false);
-  const [userAura, setUserAura] = useState(userData?.aura || 0);
-  const [unlocked, setUnlocked] = useState(userData?.unlockedItems || []);
+function AuraStore({ navigation }) {
+  const { profile } = useAuth();
 
-  useEffect(() => {
-    setUserAura(userData?.aura || 0);
-    setUnlocked(userData?.unlockedItems || []);
-  }, [userData]);
-
-  const handlePurchase = async (item) => {
-    if (unlocked.includes(item.id)) {
-      Alert.alert('Already Owned', `You already own ${item.name}.`);
+  function handleBuy(item) {
+    const aura = profile ? (profile.aura || 0) : 0;
+    if (aura < item.cost) {
+      Alert.alert('Not enough Aura', `You need ${item.cost} Aura to unlock this item. Current: ${aura}`);
       return;
     }
-    if (userAura < item.auraCost) {
-      Alert.alert('Insufficient Aura', `You need ${item.auraCost} Aura. Your balance: ${userAura}`);
-      return;
-    }
-    setLoading(true);
-    try {
-      await adjustAura(user.uid, -item.auraCost);
-      await unlockAvatarItem(user.uid, item.id);
-      // Refresh user data
-      const updatedUser = { ...userData, aura: userAura - item.auraCost, unlockedItems: [...unlocked, item.id] };
-      updateUserData(updatedUser);
-      setUserAura(updatedUser.aura);
-      setUnlocked(updatedUser.unlockedItems);
-      Alert.alert('Purchased!', `You unlocked ${item.name}. Go to Avatar to equip.`);
-    } catch (error) {
-      Alert.alert('Error', error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const renderItem = ({ item }) => (
-    <View style={{ backgroundColor: colors.card, padding: 12, borderRadius: 12, marginBottom: 12, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-        <Ionicons name={item.icon} size={32} color={colors.lavender} />
-        <View style={{ marginLeft: 12 }}>
-          <Text style={{ color: colors.text, fontSize: 16, fontWeight: 'bold' }}>{item.name}</Text>
-          <Text style={{ color: colors.textSecondary }}>{item.category}</Text>
-        </View>
-      </View>
-      <TouchableOpacity
-        onPress={() => handlePurchase(item)}
-        disabled={loading || unlocked.includes(item.id)}
-        style={{ backgroundColor: unlocked.includes(item.id) ? colors.border : colors.primary, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 }}
-      >
-        <Text style={{ color: colors.text }}>
-          {unlocked.includes(item.id) ? 'Owned' : `${item.auraCost} Aura`}
-        </Text>
-      </TouchableOpacity>
-    </View>
-  );
+    Alert.alert('Purchase', `Unlock ${item.name} for ${item.cost} Aura?`, [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Buy', onPress: () => Alert.alert('Unlocked!', `${item.name} is now in your vault.`) },
+    ]);
+  }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-      <LinearGradient colors={[colors.background, '#0A0A14']} style={{ flex: 1 }}>
-        <View style={{ padding: 16 }}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-            <Text style={{ color: colors.text, fontSize: 24, fontWeight: 'bold', fontFamily: 'FiraCode-Regular' }}>Aura Store</Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Ionicons name="flash" size={20} color={colors.lavender} />
-              <Text style={{ color: colors.text, marginLeft: 4, fontSize: 18 }}>{userAura > 999999 ? '∞' : userAura}</Text>
-            </View>
-          </View>
-          <FlatList
-            data={storeItems}
-            renderItem={renderItem}
-            keyExtractor={item => item.id}
-            showsVerticalScrollIndicator={false}
-          />
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <Ionicons name="arrow-back" size={24} color={Colors.text} />
+        </TouchableOpacity>
+        <Text style={styles.title}>✨ Aura Store</Text>
+        <View style={styles.auraChip}>
+          <Text style={styles.auraChipText}>{profile ? (profile.aura || 0) : 0} ✨</Text>
         </View>
-      </LinearGradient>
+      </View>
+
+      <FlatList
+        data={STORE_ITEMS}
+        numColumns={2}
+        keyExtractor={item => item.id}
+        contentContainerStyle={styles.grid}
+        renderItem={({ item }) => (
+          <TouchableOpacity style={styles.card} onPress={() => handleBuy(item)}>
+            <Text style={styles.itemEmoji}>{item.emoji}</Text>
+            <Text style={styles.itemName}>{item.name}</Text>
+            <Text style={styles.itemDesc} numberOfLines={2}>{item.description}</Text>
+            <View style={styles.costRow}>
+              <Text style={styles.costText}>{item.cost} ✨</Text>
+            </View>
+          </TouchableOpacity>
+        )}
+      />
     </SafeAreaView>
   );
-};
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: Colors.background },
+  header: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    padding: 16, borderBottomWidth: 1, borderBottomColor: Colors.border,
+  },
+  title: { color: Colors.text, fontSize: 18, fontWeight: '700', fontFamily: 'FiraCode-Regular' },
+  auraChip: { backgroundColor: Colors.secondary, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 5 },
+  auraChipText: { color: Colors.text, fontWeight: '700', fontSize: 13, fontFamily: 'FiraCode-Regular' },
+  grid: { padding: 12 },
+  card: {
+    flex: 1, margin: 6, backgroundColor: Colors.card,
+    borderRadius: 16, padding: 14, alignItems: 'center',
+    borderWidth: 1, borderColor: Colors.border,
+  },
+  itemEmoji: { fontSize: 40, marginBottom: 8 },
+  itemName: { color: Colors.text, fontWeight: '700', fontSize: 14, marginBottom: 4, textAlign: 'center', fontFamily: 'FiraCode-Regular' },
+  itemDesc: { color: Colors.textSecondary, fontSize: 11, textAlign: 'center', marginBottom: 10, fontFamily: 'FiraCode-Regular' },
+  costRow: { backgroundColor: Colors.secondary, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 4 },
+  costText: { color: Colors.text, fontWeight: '700', fontSize: 12, fontFamily: 'FiraCode-Regular' },
+});
 
 export default AuraStore;

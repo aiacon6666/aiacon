@@ -1,154 +1,140 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, FlatList, TextInput, TouchableOpacity, Image, ActivityIndicator, Alert, SafeAreaView, KeyboardAvoidingView, Platform } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import {
+  View, Text, StyleSheet, FlatList, TextInput,
+  TouchableOpacity, KeyboardAvoidingView, Platform,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import * as ImagePicker from 'expo-image-picker';
-import { Audio } from 'expo-av';
+import Colors from '../theme/colors';
+import { sendMessage, listenMessages } from '../services/backend';
 import { useAuth } from '../context/AuthContext';
-import { sendMessage, subscribeToMessages, markMessagesAsRead } from '../services/backend';
-import { uploadToTelegram } from '../services/telegramStorage';
-import { colors } from '../theme/colors';
+import * as ImagePicker from 'expo-image-picker';
+import { uploadToTelegram, getTelegramFileUrl } from '../services/telegramStorage';
 
-const ChatScreen = ({ route, navigation }) => {
-  const { conversationId, otherUser } = route.params;
-  const { user, userData } = useAuth();
+function ChatScreen({ navigation, route }) {
+  const params = route.params || {};
+  const convId = params.convId || 'default';
+  const chatName = params.name || 'Chat';
+  const { user } = useAuth();
   const [messages, setMessages] = useState([]);
-  const [messageText, setMessageText] = useState('');
+  const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
-  const [recording, setRecording] = useState(null);
-  const [voiceUri, setVoiceUri] = useState(null);
   const flatListRef = useRef(null);
 
   useEffect(() => {
-    const unsubscribe = subscribeToMessages(conversationId, (msgs) => {
+    const unsub = listenMessages(convId, (msgs) => {
       setMessages(msgs);
-      flatListRef.current?.scrollToEnd({ animated: true });
+      setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
     });
-    markMessagesAsRead(conversationId, user.uid);
-    navigation.setOptions({ title: `@${otherUser?.username || 'User'}` });
-    return () => unsubscribe();
-  }, [conversationId]);
+    return unsub;
+  }, [convId]);
 
-  const pickImage = async () => {
+  async function handleSend() {
+    const text = input.trim();
+    if (!text || sending) return;
+    setInput('');
+    setSending(true);
+    try {
+      await sendMessage(convId, user.uid, text, '');
+    } finally {
+      setSending(false);
+    }
+  }
+
+  async function handleAttach() {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      quality: 0.8,
+      quality: 0.7,
     });
-    if (!result.canceled) {
-      await sendMedia(result.assets[0].uri, 'image');
+    if (!result.canceled && result.assets.length > 0) {
+      setSending(true);
+      try {
+        const uploaded = await uploadToTelegram(result.assets[0].uri, 'image');
+        const url = await getTelegramFileUrl(uploaded.fileId);
+        await sendMessage(convId, user.uid, '', url);
+      } finally {
+        setSending(false);
+      }
     }
-  };
+  }
 
-  const sendMedia = async (uri, type) => {
-    setSending(true);
-    try {
-      const fileId = await uploadToTelegram(uri, `chat_${Date.now()}.${type === 'image' ? 'jpg' : 'mp4'}`);
-      await sendMessage(conversationId, user.uid, '', fileId, null);
-    } catch (error) {
-      Alert.alert('Error', error.message);
-    } finally {
-      setSending(false);
-    }
-  };
-
-  const startRecording = async () => {
-    try {
-      const { granted } = await Audio.requestPermissionsAsync();
-      if (!granted) return Alert.alert('Microphone permission required');
-      await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
-      const newRecording = new Audio.Recording();
-      await newRecording.prepareToRecordAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
-      await newRecording.startAsync();
-      setRecording(newRecording);
-    } catch (err) { console.error(err); }
-  };
-
-  const stopRecording = async () => {
-    if (!recording) return;
-    await recording.stopAndUnloadAsync();
-    const uri = recording.getURI();
-    setVoiceUri(uri);
-    setRecording(null);
-    // Send voice message automatically
-    await sendVoice(uri);
-  };
-
-  const sendVoice = async (uri) => {
-    setSending(true);
-    try {
-      const fileId = await uploadToTelegram(uri, `voice_${Date.now()}.m4a`);
-      await sendMessage(conversationId, user.uid, '', null, fileId);
-      setVoiceUri(null);
-    } catch (error) {
-      Alert.alert('Error', error.message);
-    } finally {
-      setSending(false);
-    }
-  };
-
-  const sendText = async () => {
-    if (!messageText.trim()) return;
-    setSending(true);
-    try {
-      await sendMessage(conversationId, user.uid, messageText);
-      setMessageText('');
-    } catch (error) {
-      Alert.alert('Error', error.message);
-    } finally {
-      setSending(false);
-    }
-  };
-
-  const renderMessage = ({ item }) => (
-    <View style={{ alignSelf: item.senderId === user.uid ? 'flex-end' : 'flex-start', marginVertical: 4, marginHorizontal: 8, maxWidth: '80%' }}>
-      <View style={{ backgroundColor: item.senderId === user.uid ? colors.primary : colors.card, padding: 10, borderRadius: 12 }}>
-        {item.text ? <Text style={{ color: colors.text }}>{item.text}</Text> : null}
-        {item.mediaUrl && <Image source={{ uri: item.mediaUrl }} style={{ width: 150, height: 150, borderRadius: 8, marginTop: 4 }} />}
-        {item.voiceUrl && (
-          <TouchableOpacity onPress={() => {}} style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <Ionicons name="mic" size={20} color={colors.lavender} />
-            <Text style={{ color: colors.textSecondary, marginLeft: 8 }}>Voice message</Text>
-          </TouchableOpacity>
-        )}
-        <Text style={{ color: colors.textSecondary, fontSize: 10, marginTop: 4 }}>{new Date(item.createdAt?.toDate()).toLocaleTimeString()}</Text>
-      </View>
-    </View>
-  );
+  function isMe(msg) {
+    return user && msg.senderId === user.uid;
+  }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
-        <LinearGradient colors={[colors.background, '#0A0A14']} style={{ flex: 1 }}>
-          <FlatList
-            ref={flatListRef}
-            data={messages}
-            renderItem={renderMessage}
-            keyExtractor={item => item.id}
-            onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <Ionicons name="arrow-back" size={24} color={Colors.text} />
+        </TouchableOpacity>
+        <Text style={styles.headerName}>{chatName}</Text>
+        <View style={styles.headerActions}>
+          <TouchableOpacity style={{ marginLeft: 12 }}>
+            <Ionicons name="call-outline" size={22} color={Colors.textSecondary} />
+          </TouchableOpacity>
+          <TouchableOpacity style={{ marginLeft: 12 }}>
+            <Ionicons name="videocam-outline" size={22} color={Colors.textSecondary} />
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <FlatList
+          ref={flatListRef}
+          data={messages}
+          keyExtractor={item => item.id}
+          contentContainerStyle={styles.messageList}
+          renderItem={({ item }) => {
+            const mine = isMe(item);
+            return (
+              <View style={[styles.bubble, mine ? styles.myBubble : styles.theirBubble]}>
+                {item.mediaUrl ? <Text style={styles.mediaLabel}>📎 Image</Text> : null}
+                {item.text ? <Text style={[styles.bubbleText, mine && styles.myBubbleText]}>{item.text}</Text> : null}
+                {mine && <Text style={styles.tick}>{item.read ? '✓✓' : '✓'}</Text>}
+              </View>
+            );
+          }}
+        />
+
+        <View style={styles.inputRow}>
+          <TouchableOpacity style={styles.attachBtn} onPress={handleAttach}>
+            <Ionicons name="attach" size={22} color={Colors.textSecondary} />
+          </TouchableOpacity>
+          <TextInput
+            style={styles.textInput}
+            placeholder="Message..."
+            placeholderTextColor={Colors.textSecondary}
+            value={input}
+            onChangeText={setInput}
+            multiline
           />
-          <View style={{ flexDirection: 'row', padding: 8, borderTopWidth: 1, borderTopColor: colors.border, alignItems: 'center' }}>
-            <TouchableOpacity onPress={pickImage} style={{ marginRight: 8 }}>
-              <Ionicons name="image-outline" size={28} color={colors.lavender} />
-            </TouchableOpacity>
-            <TouchableOpacity onPress={recording ? stopRecording : startRecording} style={{ marginRight: 8 }}>
-              <Ionicons name={recording ? 'mic' : 'mic-outline'} size={28} color={recording ? colors.error : colors.lavender} />
-            </TouchableOpacity>
-            <TextInput
-              style={{ flex: 1, backgroundColor: colors.card, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 8, color: colors.text }}
-              placeholder="Type a message..."
-              placeholderTextColor={colors.textSecondary}
-              value={messageText}
-              onChangeText={setMessageText}
-            />
-            <TouchableOpacity onPress={sendText} disabled={sending} style={{ marginLeft: 8 }}>
-              {sending ? <ActivityIndicator size="small" color={colors.lavender} /> : <Ionicons name="send" size={24} color={colors.lavender} />}
-            </TouchableOpacity>
-          </View>
-        </LinearGradient>
+          <TouchableOpacity style={styles.sendBtn} onPress={handleSend} disabled={sending}>
+            <Ionicons name="send" size={18} color={Colors.text} />
+          </TouchableOpacity>
+        </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
-};
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: Colors.background },
+  header: { flexDirection: 'row', alignItems: 'center', padding: 14, borderBottomWidth: 1, borderBottomColor: Colors.border },
+  headerName: { flex: 1, color: Colors.text, fontSize: 17, fontWeight: '700', marginLeft: 12, fontFamily: 'FiraCode-Regular' },
+  headerActions: { flexDirection: 'row' },
+  messageList: { padding: 12 },
+  bubble: { maxWidth: '78%', borderRadius: 16, padding: 10, marginVertical: 3 },
+  myBubble: { backgroundColor: Colors.primary, alignSelf: 'flex-end', borderBottomRightRadius: 4 },
+  theirBubble: { backgroundColor: Colors.card, alignSelf: 'flex-start', borderBottomLeftRadius: 4, borderWidth: 1, borderColor: Colors.border },
+  bubbleText: { color: Colors.text, fontSize: 14, lineHeight: 19, fontFamily: 'FiraCode-Regular' },
+  myBubbleText: { color: '#fff' },
+  mediaLabel: { color: Colors.textSecondary, fontSize: 13, fontFamily: 'FiraCode-Regular' },
+  tick: { color: 'rgba(255,255,255,0.6)', fontSize: 10, textAlign: 'right', marginTop: 2, fontFamily: 'FiraCode-Regular' },
+  inputRow: { flexDirection: 'row', alignItems: 'flex-end', padding: 10, borderTopWidth: 1, borderTopColor: Colors.border, backgroundColor: Colors.card },
+  attachBtn: { padding: 6, marginRight: 4 },
+  textInput: { flex: 1, color: Colors.text, fontSize: 14, maxHeight: 100, paddingVertical: 6, paddingHorizontal: 4, fontFamily: 'FiraCode-Regular' },
+  sendBtn: { backgroundColor: Colors.primary, borderRadius: 22, width: 38, height: 38, alignItems: 'center', justifyContent: 'center', marginLeft: 8 },
+});
 
 export default ChatScreen;

@@ -1,4 +1,4 @@
-// Firebase config (from your earlier google-services.json)
+// Firebase config (real – from your project)
 export const FIREBASE_CONFIG = {
   apiKey: "AIzaSyDHsZfuqWcd3rd85RIfxepJ9kiB6HWxko4",
   authDomain: "aiacon-f3655.firebaseapp.com",
@@ -11,7 +11,7 @@ export const FIREBASE_CONFIG = {
 // Cloudinary
 export const cloudinaryApiKey = "265816457913299";
 export const cloudinaryCloudName = "dwlbyagsg";
-export const cloudinaryApiSecret = "<INSERT_API_SECRET>";
+export const cloudinaryApiSecret = "YOUR_CLOUDINARY_SECRET";
 
 // Supabase
 export const supabaseUrl = "https://qtwcakvuadmuivevvvfm.supabase.co";

@@ -1,63 +1,146 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, FlatList, Image, ActivityIndicator, Alert } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import {
+  View, Text, StyleSheet, ScrollView, TouchableOpacity,
+  Dimensions, Image,
+} from 'react-native';
+import FastImage from 'react-native-fast-image';
+import { Ionicons } from '@expo/vector-icons';
+import Colors from '../theme/colors';
+import { fetchActiveStories } from '../services/backend';
 import { useAuth } from '../context/AuthContext';
-import { collection, query, where, onSnapshot, orderBy, doc, updateDoc } from 'firebase/firestore';
-import { db } from '../services/backend';
-import { colors } from '../theme/colors';
 
-const AboutStories = () => {
-  const navigation = useNavigation();
-  const { user } = useAuth();
+const STORY_SIZE = 70;
+
+function AboutStories({ onCreateStory, onViewStory }) {
+  const { user, profile } = useAuth();
   const [stories, setStories] = useState([]);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user) return;
-    const q = query(
-      collection(db, 'stories'),
-      where('expiresAt', '>', new Date()),
-      orderBy('createdAt', 'desc')
-    );
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setStories(data);
-      setLoading(false);
-    });
-    return unsubscribe;
-  }, [user]);
+    loadStories();
+  }, []);
 
-  const openStoryViewer = (storyId) => navigation.navigate('StoryViewer', { storyId });
-  const createNewStory = () => navigation.navigate('CreateStory');
+  async function loadStories() {
+    try {
+      const s = await fetchActiveStories();
+      setStories(s);
+    } catch (e) {
+      console.log('fetchActiveStories error', e);
+    }
+  }
 
-  if (loading) return <ActivityIndicator size="small" color={colors.lavender} />;
+  // Group stories by authorId
+  const grouped = {};
+  stories.forEach(s => {
+    if (!grouped[s.authorId]) grouped[s.authorId] = [];
+    grouped[s.authorId].push(s);
+  });
+  const authors = Object.keys(grouped);
+
   return (
-    <View style={{ paddingVertical: 12, backgroundColor: colors.background }}>
-      <FlatList
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        data={[{ id: 'add' }, ...stories]}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => {
-          if (item.id === 'add') {
-            return (
-              <TouchableOpacity onPress={createNewStory} style={{ marginHorizontal: 8, alignItems: 'center' }}>
-                <View style={{ width: 70, height: 70, borderRadius: 35, backgroundColor: colors.card, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: colors.lavender }}>
-                  <Text style={{ fontSize: 30, color: colors.lavender }}>+</Text>
-                </View>
-                <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 4 }}>Your Story</Text>
-              </TouchableOpacity>
-            );
-          }
+    <View style={styles.container}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.scroll}>
+        {/* Create Story */}
+        <TouchableOpacity style={styles.storyItem} onPress={onCreateStory}>
+          <View style={styles.createCircle}>
+            <FastImage
+              source={{ uri: profile && profile.avatar ? profile.avatar : `https://ui-avatars.com/api/?name=Me&background=0047AB&color=fff` }}
+              style={styles.avatar}
+            />
+            <View style={styles.plusBadge}>
+              <Ionicons name="add" size={14} color={Colors.text} />
+            </View>
+          </View>
+          <Text style={styles.label} numberOfLines={1}>Your Story</Text>
+        </TouchableOpacity>
+
+        {/* Other Users' Stories */}
+        {authors.map(authorId => {
+          const userStories = grouped[authorId];
+          const first = userStories[0];
+          const unseen = user ? userStories.some(s => !s.viewers || s.viewers.indexOf(user.uid) === -1) : true;
           return (
-            <TouchableOpacity onPress={() => openStoryViewer(item.id)} style={{ marginHorizontal: 8, alignItems: 'center' }}>
-              <Image source={{ uri: item.thumbnailUrl || 'https://via.placeholder.com/70' }} style={{ width: 70, height: 70, borderRadius: 35, borderWidth: 2, borderColor: colors.lavender }} />
-              <Text style={{ color: colors.text, fontSize: 12, marginTop: 4 }} numberOfLines={1}>{item.userName || 'User'}</Text>
+            <TouchableOpacity
+              key={authorId}
+              style={styles.storyItem}
+              onPress={() => onViewStory(userStories)}
+            >
+              <View style={[styles.storyRing, unseen ? styles.unseenRing : styles.seenRing]}>
+                <FastImage
+                  source={{ uri: first.authorAvatar || `https://ui-avatars.com/api/?name=${first.authorName || 'U'}&background=3F0D6C&color=fff` }}
+                  style={styles.avatar}
+                />
+              </View>
+              <Text style={styles.label} numberOfLines={1}>{first.authorName || 'User'}</Text>
             </TouchableOpacity>
           );
-        }}
-      />
+        })}
+      </ScrollView>
     </View>
   );
-};
+}
+
+const styles = StyleSheet.create({
+  container: {
+    backgroundColor: Colors.card,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+    paddingVertical: 10,
+  },
+  scroll: {
+    paddingHorizontal: 12,
+  },
+  storyItem: {
+    alignItems: 'center',
+    marginRight: 14,
+    width: STORY_SIZE,
+  },
+  createCircle: {
+    width: STORY_SIZE,
+    height: STORY_SIZE,
+    borderRadius: STORY_SIZE / 2,
+    borderWidth: 2,
+    borderColor: Colors.border,
+    overflow: 'visible',
+    position: 'relative',
+  },
+  avatar: {
+    width: STORY_SIZE,
+    height: STORY_SIZE,
+    borderRadius: STORY_SIZE / 2,
+  },
+  plusBadge: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: Colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: Colors.background,
+  },
+  storyRing: {
+    width: STORY_SIZE + 4,
+    height: STORY_SIZE + 4,
+    borderRadius: (STORY_SIZE + 4) / 2,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  unseenRing: {
+    borderColor: Colors.accent,
+  },
+  seenRing: {
+    borderColor: Colors.border,
+  },
+  label: {
+    color: Colors.textSecondary,
+    fontSize: 11,
+    marginTop: 5,
+    textAlign: 'center',
+  },
+});
+
 export default AboutStories;

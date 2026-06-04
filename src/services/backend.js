@@ -1,437 +1,209 @@
 import { initializeApp } from 'firebase/app';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getFirestore, collection, addDoc, getDocs, query, orderBy, limit, startAfter, where, updateDoc, doc, increment, arrayUnion, arrayRemove, serverTimestamp, onSnapshot } from 'firebase/firestore';
+import { getStorage } from 'firebase/storage';
+import { FIREBASE_CONFIG } from '../config/keys';
 
-// Import all Firebase keys from central config
-import {
-  firebaseApiKey,
-  firebaseAuthDomain,
-  firebaseProjectId,
-  firebaseStorageBucket,
-  firebaseMessagingSenderId,
-  firebaseAppId
-} from '../config/keys';
+export const app = initializeApp(FIREBASE_CONFIG);
+export const db = getFirestore(app);
+export const storage = getStorage(app);
 
-const firebaseConfig = {
-  apiKey: firebaseApiKey,
-  authDomain: firebaseAuthDomain,
-  projectId: firebaseProjectId,
-  storageBucket: firebaseStorageBucket,
-  messagingSenderId: firebaseMessagingSenderId,
-  appId: firebaseAppId
-};
+// ─── Posts ───────────────────────────────────────────────────────────────────
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-const storage = getStorage(app);
+export async function createPost(authorId, authorName, authorAvatar, caption, mediaUrl, mediaType) {
+  const ref = collection(db, 'posts');
+  const docRef = await addDoc(ref, {
+    authorId,
+    authorName,
+    authorAvatar: authorAvatar || '',
+    caption,
+    mediaUrl: mediaUrl || '',
+    mediaType: mediaType || 'none',
+    likes: [],
+    reposts: [],
+    thoughts: 0,
+    shares: 0,
+    createdAt: serverTimestamp(),
+    reported: false,
+  });
+  return docRef.id;
+}
 
-// ========== AUTH ==========
-export const loginWithEmail = async (email, password) => {
-  const cred = await signInWithEmailAndPassword(auth, email, password);
-  return cred.user;
-};
-
-export const loginWithUsername = async (username, password) => {
-  const usersRef = collection(db, 'users');
-  const q = query(usersRef, where('username', '==', username), limit(1));
-  const snap = await getDocs(q);
-  if (snap.empty) throw new Error('Username not found');
-  const email = snap.docs[0].data().email;
-  return loginWithEmail(email, password);
-};
-
-export const signUpWithEmail = async (email, password) => {
-  const cred = await createUserWithEmailAndPassword(auth, email, password);
-  await sendEmailVerification(cred.user);
-  return cred.user;
-};
-
-export const logout = async () => {
-  await signOut(auth);
-  await AsyncStorage.multiRemove(['onboardingCompleted', 'cachedUser']);
-};
-
-// ========== USERNAME SYSTEM ==========
-export const reserveUsername = async (userId, username) => {
-  const usernameDoc = doc(db, 'usernames', username);
-  const userDoc = doc(db, 'users', userId);
-  try {
-    await runTransaction(db, async (transaction) => {
-      const usernameSnap = await transaction.get(usernameDoc);
-      if (usernameSnap.exists()) throw new Error('Username already taken');
-      transaction.set(usernameDoc, { uid: userId, createdAt: new Date() });
-      transaction.update(userDoc, { username });
-    });
-    return true;
-  } catch (e) { throw e; }
-};
-
-export const isUsernameTaken = async (username) => {
-  const snap = await getDoc(doc(db, 'usernames', username));
-  return snap.exists();
-};
-
-// ========== USER PROFILE ==========
-export const createUserProfile = async (uid, data) => {
-  await setDoc(doc(db, 'users', uid), { ...data, createdAt: new Date(), updatedAt: new Date() });
-};
-
-export const updateUserProfile = async (uid, updates) => {
-  await updateDoc(doc(db, 'users', uid), { ...updates, updatedAt: new Date() });
-  await AsyncStorage.removeItem(`userData_${uid}`);
-};
-
-export const uploadProfilePicture = async (uid, uri) => {
-  const response = await fetch(uri);
-  const blob = await response.blob();
-  const storageRef = ref(storage, `profilePictures/${uid}.jpg`);
-  await uploadBytes(storageRef, blob);
-  const url = await getDownloadURL(storageRef);
-  await updateUserProfile(uid, { profilePicture: url });
-  return url;
-};
-
-// ========== ONBOARDING ==========
-export const completeOnboarding = async (uid) => {
-  await updateDoc(doc(db, 'users', uid), { onboardingCompleted: true });
-  await AsyncStorage.setItem('onboardingCompleted', 'true');
-};
-
-// ========== HELPER: CHECK ACCOUNT LIMITS ==========
-export const countAccountsByEmail = async (email) => {
-  const q = query(collection(db, 'users'), where('email', '==', email));
-  const snap = await getDocs(q);
-  return snap.size;
-};
-
-// ========== PHONE AUTH (basic) ==========
-export const sendPhoneOTP = async (phoneNumber, recaptchaVerifier) => {
-  const provider = new PhoneAuthProvider(auth);
-  const verificationId = await provider.verifyPhoneNumber(phoneNumber, recaptchaVerifier);
-  return verificationId;
-};
-
-export const signInWithPhoneOTP = async (verificationId, code) => {
-  const credential = PhoneAuthProvider.credential(verificationId, code);
-  const userCredential = await signInWithCredential(auth, credential);
-  return userCredential.user;
-};
-
-// Export instances
-export { auth, db, storage };
-// Add aura field to user creation
-export const initializeUserAura = async (userId) => {
-  const userRef = doc(db, 'users', userId);
-  await updateDoc(userRef, { aura: 0 });
-};
-// ========== FEED & FOLLOW SYSTEM ==========
-
-// Fetch posts with pagination
-export const fetchPosts = async (lastDoc = null, userIds = null, pageSize = 5) => {
-  let postsQuery;
-  if (userIds && userIds.length > 0) {
-    // For following feed: posts from specific users
-    postsQuery = query(
-      collection(db, 'posts'),
-      where('userId', 'in', userIds),
-      orderBy('createdAt', 'desc'),
-      limit(pageSize)
-    );
-  } else {
-    // For you feed: all posts
-    postsQuery = query(
-      collection(db, 'posts'),
-      orderBy('createdAt', 'desc'),
-      limit(pageSize)
-    );
-  }
+export async function fetchPosts(lastDoc, pageSize = 10) {
+  let q;
   if (lastDoc) {
-    postsQuery = query(postsQuery, startAfter(lastDoc));
+    q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'), startAfter(lastDoc), limit(pageSize));
+  } else {
+    q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'), limit(pageSize));
   }
-  const snapshot = await getDocs(postsQuery);
-  const posts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-  const lastVisible = snapshot.docs[snapshot.docs.length - 1];
-  return { posts, lastVisible };
-};
+  const snap = await getDocs(q);
+  const posts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  return { posts, lastDoc: snap.docs[snap.docs.length - 1] || null };
+}
 
-// Follow a user
-export const followUser = async (targetUserId) => {
-  const currentUser = auth.currentUser;
-  if (!currentUser) throw new Error('Not logged in');
-  const currentUserRef = doc(db, 'users', currentUser.uid);
-  const targetUserRef = doc(db, 'users', targetUserId);
-  await updateDoc(currentUserRef, { following: arrayUnion(targetUserId) });
-  await updateDoc(targetUserRef, { followers: arrayUnion(currentUser.uid) });
-  // Optional: send notification
-};
+export async function fetchFollowingPosts(following, lastDoc, pageSize = 10) {
+  if (!following || following.length === 0) return { posts: [], lastDoc: null };
+  let q;
+  if (lastDoc) {
+    q = query(collection(db, 'posts'), where('authorId', 'in', following.slice(0, 10)), orderBy('createdAt', 'desc'), startAfter(lastDoc), limit(pageSize));
+  } else {
+    q = query(collection(db, 'posts'), where('authorId', 'in', following.slice(0, 10)), orderBy('createdAt', 'desc'), limit(pageSize));
+  }
+  const snap = await getDocs(q);
+  const posts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  return { posts, lastDoc: snap.docs[snap.docs.length - 1] || null };
+}
 
-// Unfollow a user
-export const unfollowUser = async (targetUserId) => {
-  const currentUser = auth.currentUser;
-  if (!currentUser) throw new Error('Not logged in');
-  const currentUserRef = doc(db, 'users', currentUser.uid);
-  const targetUserRef = doc(db, 'users', targetUserId);
-  await updateDoc(currentUserRef, { following: arrayRemove(targetUserId) });
-  await updateDoc(targetUserRef, { followers: arrayRemove(currentUser.uid) });
-};
+export async function toggleLike(postId, uid) {
+  const ref = doc(db, 'posts', postId);
+  const snap = await getDoc(ref);
+  const data = snap.data();
+  const liked = data.likes && data.likes.includes(uid);
+  if (liked) {
+    await updateDoc(ref, { likes: arrayRemove(uid) });
+    return false;
+  } else {
+    await updateDoc(ref, { likes: arrayUnion(uid) });
+    await addAura(data.authorId, 1, 'received_like');
+    return true;
+  }
+}
 
-// Get list of users that the current user follows
-export const getFollowingList = async () => {
-  const currentUser = auth.currentUser;
-  if (!currentUser) return [];
-  const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
-  return userDoc.data()?.following || [];
-};
-// Ensure user document has following/followers arrays on creation
-export const initializeUserRelations = async (userId) => {
-  const userRef = doc(db, 'users', userId);
-  const userSnap = await getDoc(userRef);
-  if (!userSnap.exists()) return;
-  const data = userSnap.data();
-  if (!data.following) await updateDoc(userRef, { following: [] });
-  if (!data.followers) await updateDoc(userRef, { followers: [] });
-};
-// ========== AURA ECONOMY ==========
+export async function repostPost(postId, uid) {
+  const ref = doc(db, 'posts', postId);
+  await updateDoc(ref, { reposts: arrayUnion(uid) });
+  const snap = await getDoc(ref);
+  await addAura(snap.data().authorId, 5, 'received_repost');
+}
 
-// Get user aura balance
-export const getUserAura = async (userId) => {
-  const userRef = doc(db, 'users', userId);
-  const userSnap = await getDoc(userRef);
-  return userSnap.data()?.aura || 0;
-};
+// ─── Stories ─────────────────────────────────────────────────────────────────
 
-// Add or subtract aura (respects limits)
-export const adjustAura = async (userId, amount) => {
-  const userRef = doc(db, 'users', userId);
-  const userSnap = await getDoc(userRef);
-  let currentAura = userSnap.data()?.aura || 0;
-  let newAura = currentAura + amount;
-  // Apply limits: min -99, max 999999 (display as ∞ later)
-  if (newAura > 999999) newAura = 999999;
-  if (newAura < -99) newAura = -99;
-  await updateDoc(userRef, { aura: newAura });
-  return newAura;
-};
+export async function createStory(authorId, authorName, authorAvatar, mediaUrl, mediaType, text, bgMusic, expiresInHours = 24) {
+  const expiresAt = new Date();
+  expiresAt.setHours(expiresAt.getHours() + expiresInHours);
+  const docRef = await addDoc(collection(db, 'stories'), {
+    authorId,
+    authorName,
+    authorAvatar: authorAvatar || '',
+    mediaUrl: mediaUrl || '',
+    mediaType: mediaType || 'image',
+    text: text || '',
+    bgMusic: bgMusic || '',
+    expiresAt,
+    viewers: [],
+    createdAt: serverTimestamp(),
+  });
+  return docRef.id;
+}
 
-// Record aura transaction (for history)
-export const addAuraTransaction = async (userId, type, amount, referenceId) => {
-  const userRef = doc(db, 'users', userId);
-  const transactions = userSnap.data()?.auraTransactions || [];
-  transactions.push({
-    id: Date.now().toString(),
-    type, // 'earn_like', 'earn_repost', 'earn_comment', 'gift_sent', 'gift_received', 'spend_store'
+export async function fetchActiveStories() {
+  const now = new Date();
+  const q = query(collection(db, 'stories'), where('expiresAt', '>', now), orderBy('expiresAt', 'asc'));
+  const snap = await getDocs(q);
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+}
+
+// ─── Aura ─────────────────────────────────────────────────────────────────────
+
+export async function addAura(uid, amount, reason) {
+  const userRef = doc(db, 'users', uid);
+  await updateDoc(userRef, { aura: increment(amount) });
+  await addDoc(collection(db, 'auraTransactions'), {
+    uid,
     amount,
-    referenceId,
-    createdAt: new Date(),
+    reason,
+    createdAt: serverTimestamp(),
   });
-  await updateDoc(userRef, { auraTransactions: transactions });
-};
+}
 
-// Unlock an item for user
-export const unlockAvatarItem = async (userId, itemId) => {
-  const userRef = doc(db, 'users', userId);
-  const userSnap = await getDoc(userRef);
-  const unlockedItems = userSnap.data()?.unlockedItems || [];
-  if (!unlockedItems.includes(itemId)) {
-    await updateDoc(userRef, { unlockedItems: [...unlockedItems, itemId] });
-  }
-};
-// ========== COMMUNITIES ==========
+export async function giftAura(fromUid, toUid) {
+  await addAura(fromUid, -90, 'gifted_aura');
+  await addAura(toUid, 9, 'received_gift');
+  await createNotification(toUid, fromUid, 'gift', 'sent you Aura!');
+}
 
-// Create a new community
-export const createCommunity = async (name, description, isPublic = true, createdBy) => {
-  const communityRef = await addDoc(collection(db, 'communities'), {
-    name,
-    description,
-    isPublic,
-    createdBy,
-    createdAt: new Date(),
-    memberCount: 1,
-    postCount: 0,
-    members: [createdBy],
-  });
-  // Add the creator as a member in a subcollection for easier queries
-  await setDoc(doc(db, 'communities', communityRef.id, 'members', createdBy), { joinedAt: new Date() });
-  return communityRef.id;
-};
+// ─── Follow ───────────────────────────────────────────────────────────────────
 
-// Get public communities
-export const getPublicCommunities = async () => {
-  const q = query(collection(db, 'communities'), where('isPublic', '==', true), orderBy('createdAt', 'desc'), limit(20));
-  const snapshot = await getDocs(q);
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-};
+export async function followUser(myUid, targetUid) {
+  const myRef = doc(db, 'users', myUid);
+  const targetRef = doc(db, 'users', targetUid);
+  await updateDoc(myRef, { following: arrayUnion(targetUid) });
+  await updateDoc(targetRef, { followers: arrayUnion(myUid) });
+  await createNotification(targetUid, myUid, 'follow', 'started following you');
+}
 
-// Join a community
-export const joinCommunity = async (communityId, userId) => {
-  const communityRef = doc(db, 'communities', communityId);
-  await updateDoc(communityRef, { members: arrayUnion(userId), memberCount: increment(1) });
-  await setDoc(doc(db, 'communities', communityId, 'members', userId), { joinedAt: new Date() });
-};
+export async function unfollowUser(myUid, targetUid) {
+  const myRef = doc(db, 'users', myUid);
+  const targetRef = doc(db, 'users', targetUid);
+  await updateDoc(myRef, { following: arrayRemove(targetUid) });
+  await updateDoc(targetRef, { followers: arrayRemove(myUid) });
+}
 
-// Leave a community
-export const leaveCommunity = async (communityId, userId) => {
-  const communityRef = doc(db, 'communities', communityId);
-  await updateDoc(communityRef, { members: arrayRemove(userId), memberCount: increment(-1) });
-  await deleteDoc(doc(db, 'communities', communityId, 'members', userId));
-};
+// ─── Notifications ────────────────────────────────────────────────────────────
 
-// Post to a community
-export const postToCommunity = async (communityId, userId, text, mediaUrl = null) => {
-  const postRef = await addDoc(collection(db, 'communities', communityId, 'posts'), {
-    userId,
-    text,
-    mediaUrl,
-    createdAt: new Date(),
-    likeCount: 0,
-    commentCount: 0,
-  });
-  await updateDoc(doc(db, 'communities', communityId), { postCount: increment(1) });
-  return postRef.id;
-};
-
-// Get community posts
-export const getCommunityPosts = async (communityId, lastDoc = null, pageSize = 10) => {
-  let q = query(collection(db, 'communities', communityId, 'posts'), orderBy('createdAt', 'desc'), limit(pageSize));
-  if (lastDoc) q = query(q, startAfter(lastDoc));
-  const snapshot = await getDocs(q);
-  const posts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-  const lastVisible = snapshot.docs[snapshot.docs.length - 1];
-  return { posts, lastVisible };
-};
-
-// ========== SQUADS (Private Group Chats) ==========
-// Create a squad (private group)
-export const createSquad = async (name, participants, createdBy) => {
-  const squadRef = await addDoc(collection(db, 'squads'), {
-    name,
-    participants: [createdBy, ...participants],
-    createdBy,
-    createdAt: new Date(),
-    lastMessage: null,
-    lastMessageAt: null,
-  });
-  // Add participants to a subcollection for easy querying
-  for (const uid of [createdBy, ...participants]) {
-    await setDoc(doc(db, 'squads', squadRef.id, 'members', uid), { joinedAt: new Date() });
-  }
-  return squadRef.id;
-};
-
-// Send message to squad
-export const sendSquadMessage = async (squadId, userId, text, mediaUrl = null, voiceUrl = null) => {
-  const messageRef = await addDoc(collection(db, 'squads', squadId, 'messages'), {
-    userId,
-    text,
-    mediaUrl,
-    voiceUrl,
-    createdAt: new Date(),
-    readBy: [userId],
-  });
-  await updateDoc(doc(db, 'squads', squadId), { lastMessage: text, lastMessageAt: new Date() });
-  return messageRef.id;
-};
-
-// Get squad messages (realtime listener)
-export const subscribeToSquadMessages = (squadId, callback) => {
-  const q = query(collection(db, 'squads', squadId, 'messages'), orderBy('createdAt', 'asc'));
-  return onSnapshot(q, (snapshot) => {
-    const messages = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    callback(messages);
-  });
-};
-
-// Get user's squads
-export const getUserSquads = async (userId) => {
-  const q = query(collection(db, 'squads'), where('participants', 'array-contains', userId), orderBy('lastMessageAt', 'desc'));
-  const snapshot = await getDocs(q);
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-};
-// ========== DIRECT MESSAGING (1-ON-1) ==========
-
-// Get or create a conversation between two users
-export const getOrCreateConversation = async (userId1, userId2) => {
-  const conversationsRef = collection(db, 'conversations');
-  const q1 = query(conversationsRef, where('participants', 'array-contains', userId1));
-  const snapshot = await getDocs(q1);
-  const existing = snapshot.docs.find(doc => doc.data().participants.includes(userId2));
-  if (existing) return existing.id;
-  // Create new conversation
-  const newConv = await addDoc(conversationsRef, {
-    participants: [userId1, userId2],
-    createdAt: new Date(),
-    lastMessage: null,
-    lastMessageAt: null,
-    lastMessageSenderId: null,
-  });
-  return newConv.id;
-};
-
-// Send a message (text, image, voice)
-export const sendMessage = async (conversationId, senderId, text, mediaUrl = null, voiceUrl = null) => {
-  const messageRef = await addDoc(collection(db, 'conversations', conversationId, 'messages'), {
-    senderId,
-    text,
-    mediaUrl,
-    voiceUrl,
-    createdAt: new Date(),
+export async function createNotification(toUid, fromUid, type, message) {
+  await addDoc(collection(db, 'notifications'), {
+    toUid,
+    fromUid,
+    type,
+    message,
     read: false,
+    createdAt: serverTimestamp(),
   });
-  // Update conversation metadata
-  const convRef = doc(db, 'conversations', conversationId);
-  await updateDoc(convRef, {
-    lastMessage: text,
-    lastMessageAt: new Date(),
-    lastMessageSenderId: senderId,
+}
+
+export function listenNotifications(uid, callback) {
+  const q = query(collection(db, 'notifications'), where('toUid', '==', uid), orderBy('createdAt', 'desc'), limit(30));
+  return onSnapshot(q, (snap) => {
+    const notifs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    callback(notifs);
   });
-  return messageRef.id;
-};
+}
 
-// Get user's conversations (inbox)
-export const getUserConversations = async (userId) => {
-  const q = query(
-    collection(db, 'conversations'),
-    where('participants', 'array-contains', userId),
-    orderBy('lastMessageAt', 'desc')
-  );
-  const snapshot = await getDocs(q);
-  const conversations = [];
-  for (const convDoc of snapshot.docs) {
-    const conv = { id: convDoc.id, ...convDoc.data() };
-    const otherUserId = conv.participants.find(uid => uid !== userId);
-    const userDoc = await getDoc(doc(db, 'users', otherUserId));
-    conv.otherUser = userDoc.exists() ? { id: otherUserId, ...userDoc.data() } : { id: otherUserId, username: 'Unknown' };
-    conversations.push(conv);
-  }
-  return conversations;
-};
+// ─── Communities ──────────────────────────────────────────────────────────────
 
-// Subscribe to messages in a conversation (real-time)
-export const subscribeToMessages = (conversationId, callback) => {
-  const q = query(collection(db, 'conversations', conversationId, 'messages'), orderBy('createdAt', 'asc'));
-  return onSnapshot(q, (snapshot) => {
-    const messages = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    callback(messages);
+export async function fetchCommunities() {
+  const snap = await getDocs(collection(db, 'communities'));
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+}
+
+export async function joinCommunity(commId, uid) {
+  await updateDoc(doc(db, 'communities', commId), { members: arrayUnion(uid) });
+}
+
+export async function leaveCommunity(commId, uid) {
+  await updateDoc(doc(db, 'communities', commId), { members: arrayRemove(uid) });
+}
+
+// ─── Conversations ────────────────────────────────────────────────────────────
+
+export async function createConversation(members) {
+  const docRef = await addDoc(collection(db, 'conversations'), {
+    members,
+    lastMessage: '',
+    lastMessageAt: serverTimestamp(),
+    createdAt: serverTimestamp(),
   });
-};
+  return docRef.id;
+}
 
-// Mark messages as read
-export const markMessagesAsRead = async (conversationId, userId) => {
-  const q = query(collection(db, 'conversations', conversationId, 'messages'), where('read', '==', false));
-  const snapshot = await getDocs(q);
-  const batch = writeBatch(db);
-  snapshot.docs.forEach(doc => {
-    if (doc.data().senderId !== userId) {
-      batch.update(doc.ref, { read: true });
-    }
+export async function sendMessage(convId, senderId, text, mediaUrl) {
+  await addDoc(collection(db, 'conversations', convId, 'messages'), {
+    senderId,
+    text: text || '',
+    mediaUrl: mediaUrl || '',
+    read: false,
+    createdAt: serverTimestamp(),
   });
-  await batch.commit();
-};
+  await updateDoc(doc(db, 'conversations', convId), {
+    lastMessage: text || '📎 Media',
+    lastMessageAt: serverTimestamp(),
+  });
+}
 
-// ========== GOOGLE SIGN-IN (OAuth) ==========
-import { googleAndroidClientId, googleWebClientId } from '../config/keys';
-
-// For Android APK
-export const getGoogleAndroidClientId = () => googleAndroidClientId;
-// For development (Expo Go) – web client ID
-export const getGoogleWebClientId = () => googleWebClientId;
+export function listenMessages(convId, callback) {
+  const q = query(collection(db, 'conversations', convId, 'messages'), orderBy('createdAt', 'asc'));
+  return onSnapshot(q, (snap) => {
+    const msgs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    callback(msgs);
+  });
+}

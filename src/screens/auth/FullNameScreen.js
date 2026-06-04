@@ -1,35 +1,57 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, SafeAreaView } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import Colors from '../../theme/colors';
 
-const FullNameScreen = () => {
-  const navigation = useNavigation();
-  const route = useRoute();
-  const { userId, email, username } = route.params;
-  const [fullName, setFullName] = useState('');
+function FullNameScreen({ navigation, route }) {
+  const params = route.params || {};
+  const [name, setName] = useState('');
+
+  function handleContinue() {
+    if (name.trim().length < 2) {
+      Alert.alert('Enter your full name');
+      return;
+    }
+    navigation.navigate('DateOfBirth', { ...params, displayName: name.trim() });
+  }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#050A30' }}>
-      <LinearGradient colors={['#050A30', '#0A0A14']} style={{ flex: 1, padding: 24 }}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginBottom: 20 }}>
-          <Ionicons name="arrow-back" size={28} color="#9F7AEA" />
-        </TouchableOpacity>
-        <Text style={{ fontSize: 32, color: '#FFF', fontWeight: '700', marginBottom: 8 }}>Your full name</Text>
-        <Text style={{ color: '#aaa', marginBottom: 32 }}>As you want it to appear</Text>
+    <View style={styles.container}>
+      <TouchableOpacity style={styles.back} onPress={() => navigation.goBack()}>
+        <Ionicons name="arrow-back" size={24} color={Colors.text} />
+      </TouchableOpacity>
+      <Text style={styles.step}>Step 2 of 6</Text>
+      <Text style={styles.title}>What's your name?</Text>
+      <Text style={styles.subtitle}>This is how you'll appear on AiaCon.</Text>
 
-        <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 18, paddingHorizontal: 16, height: 56, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }}>
-          <Ionicons name="person-outline" size={20} color="#888" />
-          <TextInput placeholder="Full name" placeholderTextColor="#888" style={{ flex: 1, color: '#FFF', marginLeft: 12 }} value={fullName} onChangeText={setFullName} />
-        </View>
+      <TextInput
+        style={styles.input}
+        placeholder="Full name"
+        placeholderTextColor={Colors.textSecondary}
+        value={name}
+        onChangeText={setName}
+      />
 
-        <TouchableOpacity onPress={() => navigation.navigate('DateOfBirth', { userId, email, username, fullName })} disabled={!fullName} style={{ marginTop: 32, backgroundColor: '#5B4BFF', borderRadius: 30, height: 56, justifyContent: 'center', alignItems: 'center', opacity: fullName ? 1 : 0.5 }}>
-          <Text style={{ color: '#fff', fontSize: 16, fontWeight: '600' }}>Next</Text>
-        </TouchableOpacity>
-      </LinearGradient>
-    </SafeAreaView>
+      <TouchableOpacity style={styles.btn} onPress={handleContinue}>
+        <Text style={styles.btnText}>Continue</Text>
+      </TouchableOpacity>
+    </View>
   );
-};
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: Colors.background, padding: 24, paddingTop: 70 },
+  back: { position: 'absolute', top: 50, left: 20 },
+  step: { color: Colors.accent, fontSize: 12, fontWeight: '700', letterSpacing: 2, marginBottom: 12, marginTop: 20, fontFamily: 'FiraCode-Regular' },
+  title: { color: Colors.text, fontSize: 26, fontWeight: '700', marginBottom: 6, fontFamily: 'FiraCode-Regular' },
+  subtitle: { color: Colors.textSecondary, fontSize: 14, marginBottom: 28, fontFamily: 'FiraCode-Regular' },
+  input: {
+    backgroundColor: Colors.card, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 14,
+    color: Colors.text, fontSize: 16, borderWidth: 1, borderColor: Colors.border, marginBottom: 28,
+    fontFamily: 'FiraCode-Regular',
+  },
+  btn: { backgroundColor: Colors.primary, borderRadius: 14, paddingVertical: 14, alignItems: 'center' },
+  btnText: { color: Colors.text, fontSize: 16, fontWeight: '700', fontFamily: 'FiraCode-Regular' },
+});
 
 export default FullNameScreen;

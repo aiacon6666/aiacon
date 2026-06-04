@@ -2,19 +2,45 @@
   "expo": {
     "name": "AiaCon",
     "slug": "aiacon",
-    "version": "1.0.6",
+    "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0A0A14"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.snaluca.aiacon"
+    },
     "android": {
-      "package": "com.aiacon",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#050A30"
+        "backgroundColor": "#0A0A14"
       },
-      "permissions": ["android.permission.INTERNET"]
+      "package": "com.snaluca.aiacon",
+      "versionCode": 1,
+      "permissions": [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "RECORD_AUDIO",
+        "INTERNET"
+      ]
     },
-    "plugins": ["expo-splash-screen", "expo-font"],
+    "web": {
+      "favicon": "./assets/icon.png"
+    },
+    "plugins": [
+      "expo-font",
+      "expo-camera",
+      "expo-image-picker",
+      "expo-av",
+      "expo-notifications"
+    ],
     "extra": {
       "eas": {
         "projectId": "9344650d-f580-4e1b-9bdc-18c6568f333f"

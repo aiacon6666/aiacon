@@ -1,72 +1,101 @@
-import React, { useState } from 'react';
-import { View, Text, Image, TouchableOpacity, Dimensions } from 'react-native';
-import { WebView } from 'react-native-webview';
+import React from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Linking } from 'react-native';
+import FastImage from 'react-native-fast-image';
 import { Ionicons } from '@expo/vector-icons';
-import { colors } from '../theme/colors';
+import Colors from '../theme/colors';
 
-const { width } = Dimensions.get('window');
-const VIDEO_HEIGHT = 300;
-
-const YouTubeBroadcastCard = ({ video, onLike, onRepost, onComment, onShare, onMenu }) => {
-  const [playing, setPlaying] = useState(false);
-  const embedUrl = `https://www.youtube.com/embed/${video.id}?autoplay=0&controls=1&modestbranding=1&rel=0&playsinline=1`;
+function YouTubeBroadcastCard({ video }) {
+  function openVideo() {
+    const url = 'https://www.youtube.com/watch?v=' + video.id;
+    Linking.openURL(url);
+  }
 
   return (
-    <View style={{ backgroundColor: colors.card, marginBottom: 12, borderRadius: 12, overflow: 'hidden', marginHorizontal: 12 }}>
-      {/* Top row: channel name + follow placeholder */}
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 12 }}>
-        <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 16, fontFamily: 'FiraCode-Regular' }}>@{video.channelTitle}</Text>
-        <TouchableOpacity style={{ backgroundColor: colors.primary, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 }}>
-          <Text style={{ color: colors.text, fontSize: 12 }}>Follow</Text>
-        </TouchableOpacity>
+    <TouchableOpacity style={styles.card} onPress={openVideo}>
+      <View style={styles.thumbContainer}>
+        <FastImage source={{ uri: video.thumbnail }} style={styles.thumb} resizeMode={FastImage.resizeMode.cover} />
+        <View style={styles.playOverlay}>
+          <Ionicons name="logo-youtube" size={36} color="#FF0000" />
+        </View>
+        <View style={styles.durationBadge}>
+          <Text style={styles.durationText}>{video.duration || 'LIVE'}</Text>
+        </View>
       </View>
-
-      {/* YouTube video player (WebView) */}
-      {playing ? (
-        <WebView
-          source={{ uri: embedUrl }}
-          style={{ width: width - 24, height: VIDEO_HEIGHT, alignSelf: 'center' }}
-          allowsFullscreenVideo={true}
-          allowsInlineMediaPlayback={true}
-          javaScriptEnabled={true}
-        />
-      ) : (
-        <TouchableOpacity onPress={() => setPlaying(true)} style={{ position: 'relative' }}>
-          <Image source={{ uri: video.thumbnail }} style={{ width: '100%', height: VIDEO_HEIGHT }} resizeMode="cover" />
-          <View style={{ position: 'absolute', top: '50%', left: '50%', marginLeft: -25, marginTop: -25 }}>
-            <Ionicons name="play-circle" size={50} color="#fff" style={{ opacity: 0.8 }} />
-          </View>
-        </TouchableOpacity>
-      )}
-
-      {/* Video title */}
-      <Text style={{ color: colors.text, padding: 12, fontSize: 14, fontWeight: '500' }}>{video.title}</Text>
-
-      {/* Action buttons (same as PostCard) */}
-      <View style={{ flexDirection: 'row', justifyContent: 'space-around', paddingVertical: 8, borderTopWidth: 1, borderTopColor: colors.border }}>
-        <TouchableOpacity onPress={onLike} style={{ alignItems: 'center' }}>
-          <Ionicons name="heart-outline" size={24} color={colors.lavender} />
-          <Text style={{ color: colors.textSecondary, fontSize: 10 }}>Like</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={onRepost} style={{ alignItems: 'center' }}>
-          <Ionicons name="repeat-outline" size={24} color={colors.lavender} />
-          <Text style={{ color: colors.textSecondary, fontSize: 10 }}>Repost</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={onComment} style={{ alignItems: 'center' }}>
-          <Ionicons name="chatbubble-outline" size={24} color={colors.lavender} />
-          <Text style={{ color: colors.textSecondary, fontSize: 10 }}>Thoughts</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={onShare} style={{ alignItems: 'center' }}>
-          <Ionicons name="share-outline" size={24} color={colors.lavender} />
-          <Text style={{ color: colors.textSecondary, fontSize: 10 }}>Share</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={onMenu} style={{ alignItems: 'center' }}>
-          <Ionicons name="ellipsis-horizontal" size={24} color={colors.lavender} />
-          <Text style={{ color: colors.textSecondary, fontSize: 10 }}>More</Text>
-        </TouchableOpacity>
+      <View style={styles.info}>
+        <Text style={styles.title} numberOfLines={2}>{video.title}</Text>
+        <Text style={styles.channel}>{video.channelTitle}</Text>
+        <View style={styles.stats}>
+          <Ionicons name="eye-outline" size={13} color={Colors.textSecondary} />
+          <Text style={styles.statsText}>{video.viewCount || '—'} views</Text>
+        </View>
       </View>
-    </View>
+    </TouchableOpacity>
   );
-};
+}
+
+const styles = StyleSheet.create({
+  card: {
+    backgroundColor: Colors.card,
+    borderRadius: 14,
+    marginHorizontal: 12,
+    marginVertical: 6,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  thumbContainer: {
+    position: 'relative',
+  },
+  thumb: {
+    width: '100%',
+    height: 180,
+    backgroundColor: Colors.border,
+  },
+  playOverlay: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0, bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.3)',
+  },
+  durationBadge: {
+    position: 'absolute',
+    bottom: 8,
+    right: 8,
+    backgroundColor: 'rgba(0,0,0,0.8)',
+    borderRadius: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  durationText: {
+    color: Colors.text,
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  info: {
+    padding: 10,
+  },
+  title: {
+    color: Colors.text,
+    fontSize: 14,
+    fontWeight: '600',
+    lineHeight: 20,
+  },
+  channel: {
+    color: Colors.textSecondary,
+    fontSize: 12,
+    marginTop: 4,
+  },
+  stats: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  statsText: {
+    color: Colors.textSecondary,
+    fontSize: 11,
+    marginLeft: 4,
+  },
+});
 
 export default YouTubeBroadcastCard;
