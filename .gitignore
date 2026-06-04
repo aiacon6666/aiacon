@@ -1,8 +1,10 @@
 node_modules/
 .expo/
-android/
 ios/
 .env
 *.jks
 *.keystore
 .DS_Store
+
+# Central API keys file
+src/config/keys.js
