@@ -30,17 +30,15 @@
         import * as THREE from 'three';
         import { Ably } from 'ably';
 
-        // Get API key from window (injected by React Native)
         const ABLY_API_KEY = window.ablyApiKey;
         if (!ABLY_API_KEY) {
             console.error('Ably API key not provided');
-            document.getElementById('chat-container').innerHTML = '<div>Error: Ably API key missing. Please reload.</div>';
+            document.getElementById('chat-container').innerHTML = '<div>Error: Ably API key missing.</div>';
         }
 
         const client = new Ably.Realtime({ key: ABLY_API_KEY });
         const channel = client.channels.get('aiacon-world');
         
-        // Three.js setup
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x0A0A14);
         scene.fog = new THREE.FogExp2(0x0A0A14, 0.02);
@@ -53,7 +51,6 @@
         renderer.shadowMap.enabled = true;
         document.body.appendChild(renderer.domElement);
         
-        // Ground with grid
         const gridHelper = new THREE.GridHelper(30, 20, 0x9F7AEA, 0x333333);
         scene.add(gridHelper);
         
@@ -65,7 +62,6 @@
         plane.receiveShadow = true;
         scene.add(plane);
         
-        // Simple obstacles / walls
         const wallMaterial = new THREE.MeshStandardMaterial({ color: 0x3F0D6C });
         const wallPositions = [[-5, 0, -4], [5, 0, -4], [-5, 0, 4], [5, 0, 4]];
         wallPositions.forEach(pos => {
@@ -76,21 +72,17 @@
             scene.add(wall);
         });
         
-        // Lighting
         const ambientLight = new THREE.AmbientLight(0x404060);
         scene.add(ambientLight);
         const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
         directionalLight.position.set(10, 20, 5);
         directionalLight.castShadow = true;
-        directionalLight.shadow.mapSize.width = 1024;
-        directionalLight.shadow.mapSize.height = 1024;
         scene.add(directionalLight);
         
         const backLight = new THREE.PointLight(0x9F7AEA, 0.5);
         backLight.position.set(-2, 3, -4);
         scene.add(backLight);
         
-        // My avatar (customizable cube with a floating orb)
         const avatarGroup = new THREE.Group();
         const bodyGeo = new THREE.BoxGeometry(0.8, 0.8, 0.8);
         const bodyMat = new THREE.MeshStandardMaterial({ color: 0x5B4BFF, emissive: 0x1a1a4a });
@@ -112,13 +104,9 @@
         avatarGroup.position.y = 0;
         scene.add(avatarGroup);
         
-        // Store other players' avatars
         const otherPlayers = {};
-        
-        // Camera follow
         const cameraOffset = new THREE.Vector3(-6, 4, 6);
         
-        // Movement controls (WASD + arrow keys)
         const keyState = { w: false, s: false, a: false, d: false, ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false };
         const speed = 5;
         
@@ -135,27 +123,21 @@
             const backward = keyState.s || keyState.ArrowDown;
             const left = keyState.a || keyState.ArrowLeft;
             const right = keyState.d || keyState.ArrowRight;
-            
             if (forward) moveZ -= speed * deltaTime;
             if (backward) moveZ += speed * deltaTime;
             if (left) moveX -= speed * deltaTime;
             if (right) moveX += speed * deltaTime;
-            
             let newX = avatarGroup.position.x + moveX;
             let newZ = avatarGroup.position.z + moveZ;
-            // Boundaries
             newX = Math.min(Math.max(newX, -12), 12);
             newZ = Math.min(Math.max(newZ, -12), 12);
             avatarGroup.position.x = newX;
             avatarGroup.position.z = newZ;
-            
-            // Camera follow
             const targetCamPos = avatarGroup.position.clone().add(cameraOffset);
             camera.position.lerp(targetCamPos, 0.1);
             camera.lookAt(avatarGroup.position);
         }
         
-        // Send position to Ably
         let lastSendTime = 0;
         function sendPosition() {
             const now = Date.now();
@@ -171,7 +153,6 @@
             }
         }
         
-        // Receive other players
         channel.subscribe('position', (message) => {
             const { userId, username, x, z, rotY } = message.data;
             if (userId === window.userId) return;
@@ -186,14 +167,11 @@
                 group.add(h);
                 scene.add(group);
                 otherPlayers[userId] = { mesh: group, username };
-                
-                // Add name label (CSS2DRenderer would be better, but simple for now)
             }
             otherPlayers[userId].mesh.position.set(x, 0, z);
             if (rotY) otherPlayers[userId].mesh.rotation.y = rotY;
         });
         
-        // Chat handling
         channel.subscribe('chat', (message) => {
             const { username, text } = message.data;
             const chatDiv = document.getElementById('chat-container');
@@ -212,7 +190,6 @@
             chatDiv.scrollTop = chatDiv.scrollHeight;
         };
         
-        // UI chat
         const chatInput = document.getElementById('chat-input');
         const sendBtn = document.getElementById('send-btn');
         sendBtn.addEventListener('click', () => {
@@ -225,7 +202,6 @@
             if (e.key === 'Enter') sendBtn.click();
         });
         
-        // Animation loop
         let lastTime = performance.now();
         function animate() {
             const now = performance.now();
@@ -238,14 +214,12 @@
         }
         animate();
         
-        // On load, announce join
         window.addEventListener('load', () => {
             if (window.userId && window.username) {
                 channel.publish('chat', { username: 'System', text: `${window.username} joined the world` });
             }
         });
         
-        // Handle window resize
         window.addEventListener('resize', onWindowResize, false);
         function onWindowResize() {
             camera.aspect = window.innerWidth / window.innerHeight;
