@@ -22,21 +22,13 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#050A30"
       },
-      "permissions": [
-        "android.permission.INTERNET"
-      ]
+      "permissions": ["android.permission.INTERNET"]
     },
     "facebookAppId": "4524606454461841",
     "facebookDisplayName": "AiaCon",
     "plugins": [
       "expo-splash-screen",
       "expo-font"
-    ],
-    "extra": {
-      "eas": {
-        "projectId": "9344650d-f580-4e1b-9bdc-18c6568f333f"
-      }
-    },
-    "owner": "ankitdubey008s"
+    ]
   }
 }
