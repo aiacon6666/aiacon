@@ -6,14 +6,15 @@ orbs:
 jobs:
   build-android:
     docker:
-      - image: clang/android:2024.04.1
+      - image: cimg/android:2024.04.1
     resource_class: large
     steps:
       - checkout
       - run:
-          name: Install Ninja (required for CMake)
+          name: Install Ninja (if not present)
           command: |
-            apt-get update && apt-get install -y ninja-build
+            sudo apt-get update
+            sudo apt-get install -y ninja-build
       - node/install:
           node-version: '20.19'
       - node/install-packages:
