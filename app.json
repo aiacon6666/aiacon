@@ -2,7 +2,7 @@
   "expo": {
     "name": "AiaCon",
     "slug": "aiacon",
-    "version": "1.0.0",
+    "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -29,6 +29,11 @@
     "plugins": [
       "expo-splash-screen",
       "expo-font"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "9344650d-f580-4e1b-9bdc-18c6568f333f"
+      }
+    }
   }
 }
