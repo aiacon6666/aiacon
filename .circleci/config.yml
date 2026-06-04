@@ -14,13 +14,13 @@ jobs:
           node-version: '20.14.0'
       - run:
           name: Install dependencies
-          command: npm install
+          command: npm install --legacy-peer-deps
       - run:
           name: Install ninja-build
           command: sudo apt-get update && sudo apt-get install -y ninja-build
       - run:
           name: Install EAS CLI
-          command: npm install -g eas-cli
+          command: npm install --legacy-peer-deps -g eas-cli
       - run:
           name: EAS Login
           command: echo "$EXPO_TOKEN" | eas whoami || true
