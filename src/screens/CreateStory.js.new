@@ -1,0 +1,41 @@
+// Merge this snippet into your CreateStory.js
+// Add these imports at the top
+import { useVoice } from '../hooks/useVoice';
+
+// Inside your component, add:
+const { speak, startListening, stopListening, setupListeners, transcript, isListening } = useVoice();
+
+// Add useEffect for listeners (after component mount)
+useEffect(() => {
+  const cleanup = setupListeners((result) => {
+    // Auto-fill voice text when user finishes speaking
+    setVoiceText(prev => prev + (prev ? ' ' : '') + result);
+  });
+  return cleanup;
+}, []);
+
+// Voice recording button (replace your existing voice note UI)
+<View style={{ flexDirection: 'row', marginBottom: 12 }}>
+  <TouchableOpacity 
+    onPress={isListening ? stopListening : () => startListening()} 
+    style={{ backgroundColor: colors.primary, padding: 12, borderRadius: 12, marginRight: 8 }}
+  >
+    <Text style={{ color: colors.text }}>{isListening ? 'Stop Listening' : 'Start Voice Input'}</Text>
+  </TouchableOpacity>
+  {transcript && <Text style={{ color: colors.lavender }}>✓ {transcript.substring(0, 30)}</Text>}
+</View>
+
+// Preview voice text
+{transcript && (
+  <View style={{ marginBottom: 12 }}>
+    <Text style={{ color: colors.textSecondary }}>Voice note: {transcript}</Text>
+  </View>
+)}
+
+// TTS Preview button (before submitting)
+<TouchableOpacity 
+  onPress={() => speak(text || transcript)} 
+  style={{ backgroundColor: colors.card, padding: 12, borderRadius: 12, marginBottom: 12 }}
+>
+  <Text style={{ color: colors.lavender }}>🔊 Preview Voice Over</Text>
+</TouchableOpacity>

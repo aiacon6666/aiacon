@@ -1,0 +1,18 @@
+// Replace the handleLike function with this version:
+const handleLike = async () => {
+  if (!user) return;
+  const postRef = doc(db, 'posts', post.id);
+  if (isLiked) {
+    await updateDoc(postRef, { likes: arrayRemove(user.uid), likeCount: increment(-1) });
+    setIsLiked(false);
+  } else {
+    await updateDoc(postRef, { likes: arrayUnion(user.uid), likeCount: increment(1) });
+    if (post.userId !== user.uid) {
+      await adjustAura(post.userId, 1); // give aura to post creator
+      await addAuraTransaction(post.userId, 'earn_like', 1, post.id);
+    }
+    setIsLiked(true);
+  }
+  if (onUpdate) onUpdate();
+};
+// Similarly for handleRepost and comment submit (already have aura increment there)

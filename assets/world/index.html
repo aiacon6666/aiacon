@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>AiaCon World</title>
+    <style>
+        body { margin: 0; overflow: hidden; font-family: 'Fira Code', monospace; }
+        #chat-container { position: absolute; bottom: 60px; left: 10px; right: 10px; background: rgba(0,0,0,0.7); border-radius: 8px; padding: 8px; color: white; max-height: 150px; overflow-y: auto; font-size: 12px; z-index: 10; pointer-events: none; }
+        #chat-input { position: absolute; bottom: 10px; left: 60px; right: 80px; background: rgba(0,0,0,0.8); border: none; color: white; padding: 10px; border-radius: 20px; outline: none; pointer-events: auto; z-index: 20; }
+        #send-btn { position: absolute; bottom: 10px; right: 10px; background: #5B4BFF; border: none; color: white; padding: 10px 20px; border-radius: 20px; cursor: pointer; pointer-events: auto; z-index: 20; }
+        #controls-info { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.5); color: white; padding: 5px 10px; border-radius: 8px; font-size: 10px; z-index: 10; }
+    </style>
+</head>
+<body>
+    <div id="chat-container"></div>
+    <input id="chat-input" type="text" placeholder="Type a message..." />
+    <button id="send-btn">Send</button>
+    <div id="controls-info">WASD to move | Click chat to type</div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.128.0/build/three.module.js",
+                "ably": "https://cdn.ably.com/lib/ably.min.js"
+            }
+        }
+    </script>
+    <script type="module">
+        import * as THREE from 'three';
+        import { Ably } from 'ably';
+
+        // Get API key from window (injected by React Native)
+        const ABLY_API_KEY = window.ablyApiKey;
+        if (!ABLY_API_KEY) {
+            console.error('Ably API key not provided');
+            document.getElementById('chat-container').innerHTML = '<div>Error: Ably API key missing. Please reload.</div>';
+        }
+
+        const client = new Ably.Realtime({ key: ABLY_API_KEY });
+        const channel = client.channels.get('aiacon-world');
+        
+        // Three.js setup
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x0A0A14);
+        scene.fog = new THREE.FogExp2(0x0A0A14, 0.02);
+        
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(5, 5, 10);
+        
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        document.body.appendChild(renderer.domElement);
+        
+        // Ground with grid
+        const gridHelper = new THREE.GridHelper(30, 20, 0x9F7AEA, 0x333333);
+        scene.add(gridHelper);
+        
+        const planeGeometry = new THREE.PlaneGeometry(30, 30);
+        const planeMaterial = new THREE.MeshStandardMaterial({ color: 0x1A1A2E, side: THREE.DoubleSide });
+        const plane = new THREE.Mesh(planeGeometry, planeMaterial);
+        plane.rotation.x = -Math.PI / 2;
+        plane.position.y = -0.5;
+        plane.receiveShadow = true;
+        scene.add(plane);
+        
+        // Simple obstacles / walls
+        const wallMaterial = new THREE.MeshStandardMaterial({ color: 0x3F0D6C });
+        const wallPositions = [[-5, 0, -4], [5, 0, -4], [-5, 0, 4], [5, 0, 4]];
+        wallPositions.forEach(pos => {
+            const wall = new THREE.Mesh(new THREE.BoxGeometry(1, 1.5, 1), wallMaterial);
+            wall.position.set(pos[0], pos[1], pos[2]);
+            wall.castShadow = true;
+            wall.receiveShadow = true;
+            scene.add(wall);
+        });
+        
+        // Lighting
+        const ambientLight = new THREE.AmbientLight(0x404060);
+        scene.add(ambientLight);
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+        directionalLight.position.set(10, 20, 5);
+        directionalLight.castShadow = true;
+        directionalLight.shadow.mapSize.width = 1024;
+        directionalLight.shadow.mapSize.height = 1024;
+        scene.add(directionalLight);
+        
+        const backLight = new THREE.PointLight(0x9F7AEA, 0.5);
+        backLight.position.set(-2, 3, -4);
+        scene.add(backLight);
+        
+        // My avatar (customizable cube with a floating orb)
+        const avatarGroup = new THREE.Group();
+        const bodyGeo = new THREE.BoxGeometry(0.8, 0.8, 0.8);
+        const bodyMat = new THREE.MeshStandardMaterial({ color: 0x5B4BFF, emissive: 0x1a1a4a });
+        const body = new THREE.Mesh(bodyGeo, bodyMat);
+        body.castShadow = true;
+        avatarGroup.add(body);
+        
+        const headMat = new THREE.MeshStandardMaterial({ color: 0x9F7AEA });
+        const head = new THREE.Mesh(new THREE.SphereGeometry(0.4), headMat);
+        head.position.y = 0.7;
+        avatarGroup.add(head);
+        
+        const orbMat = new THREE.MeshStandardMaterial({ color: 0x00FFFF, emissive: 0x00FFFF, emissiveIntensity: 0.5 });
+        const orb = new THREE.Mesh(new THREE.SphereGeometry(0.2), orbMat);
+        orb.position.y = 0.2;
+        orb.position.z = 0.5;
+        avatarGroup.add(orb);
+        
+        avatarGroup.position.y = 0;
+        scene.add(avatarGroup);
+        
+        // Store other players' avatars
+        const otherPlayers = {};
+        
+        // Camera follow
+        const cameraOffset = new THREE.Vector3(-6, 4, 6);
+        
+        // Movement controls (WASD + arrow keys)
+        const keyState = { w: false, s: false, a: false, d: false, ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false };
+        const speed = 5;
+        
+        window.addEventListener('keydown', (e) => {
+            if (keyState.hasOwnProperty(e.code)) keyState[e.code] = true;
+        });
+        window.addEventListener('keyup', (e) => {
+            if (keyState.hasOwnProperty(e.code)) keyState[e.code] = false;
+        });
+        
+        function updatePosition(deltaTime) {
+            let moveX = 0, moveZ = 0;
+            const forward = keyState.w || keyState.ArrowUp;
+            const backward = keyState.s || keyState.ArrowDown;
+            const left = keyState.a || keyState.ArrowLeft;
+            const right = keyState.d || keyState.ArrowRight;
+            
+            if (forward) moveZ -= speed * deltaTime;
+            if (backward) moveZ += speed * deltaTime;
+            if (left) moveX -= speed * deltaTime;
+            if (right) moveX += speed * deltaTime;
+            
+            let newX = avatarGroup.position.x + moveX;
+            let newZ = avatarGroup.position.z + moveZ;
+            // Boundaries
+            newX = Math.min(Math.max(newX, -12), 12);
+            newZ = Math.min(Math.max(newZ, -12), 12);
+            avatarGroup.position.x = newX;
+            avatarGroup.position.z = newZ;
+            
+            // Camera follow
+            const targetCamPos = avatarGroup.position.clone().add(cameraOffset);
+            camera.position.lerp(targetCamPos, 0.1);
+            camera.lookAt(avatarGroup.position);
+        }
+        
+        // Send position to Ably
+        let lastSendTime = 0;
+        function sendPosition() {
+            const now = Date.now();
+            if (now - lastSendTime > 50) {
+                lastSendTime = now;
+                channel.publish('position', {
+                    userId: window.userId,
+                    username: window.username,
+                    x: avatarGroup.position.x,
+                    z: avatarGroup.position.z,
+                    rotY: avatarGroup.rotation.y
+                });
+            }
+        }
+        
+        // Receive other players
+        channel.subscribe('position', (message) => {
+            const { userId, username, x, z, rotY } = message.data;
+            if (userId === window.userId) return;
+            if (!otherPlayers[userId]) {
+                const group = new THREE.Group();
+                const bGeo = new THREE.BoxGeometry(0.8, 0.8, 0.8);
+                const bMat = new THREE.MeshStandardMaterial({ color: 0x9F7AEA });
+                const b = new THREE.Mesh(bGeo, bMat);
+                group.add(b);
+                const h = new THREE.Mesh(new THREE.SphereGeometry(0.4), new THREE.MeshStandardMaterial({ color: 0xC084FC }));
+                h.position.y = 0.7;
+                group.add(h);
+                scene.add(group);
+                otherPlayers[userId] = { mesh: group, username };
+                
+                // Add name label (CSS2DRenderer would be better, but simple for now)
+            }
+            otherPlayers[userId].mesh.position.set(x, 0, z);
+            if (rotY) otherPlayers[userId].mesh.rotation.y = rotY;
+        });
+        
+        // Chat handling
+        channel.subscribe('chat', (message) => {
+            const { username, text } = message.data;
+            const chatDiv = document.getElementById('chat-container');
+            const msgDiv = document.createElement('div');
+            msgDiv.innerHTML = `<b>@${username}</b>: ${text}`;
+            chatDiv.appendChild(msgDiv);
+            chatDiv.scrollTop = chatDiv.scrollHeight;
+        });
+        
+        window.broadcastChat = (text) => {
+            channel.publish('chat', { username: window.username, text });
+            const chatDiv = document.getElementById('chat-container');
+            const msgDiv = document.createElement('div');
+            msgDiv.innerHTML = `<b>@${window.username}</b>: ${text}`;
+            chatDiv.appendChild(msgDiv);
+            chatDiv.scrollTop = chatDiv.scrollHeight;
+        };
+        
+        // UI chat
+        const chatInput = document.getElementById('chat-input');
+        const sendBtn = document.getElementById('send-btn');
+        sendBtn.addEventListener('click', () => {
+            if (chatInput.value.trim()) {
+                window.broadcastChat(chatInput.value);
+                chatInput.value = '';
+            }
+        });
+        chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendBtn.click();
+        });
+        
+        // Animation loop
+        let lastTime = performance.now();
+        function animate() {
+            const now = performance.now();
+            let delta = Math.min(0.033, (now - lastTime) / 1000);
+            lastTime = now;
+            updatePosition(delta);
+            sendPosition();
+            renderer.render(scene, camera);
+            requestAnimationFrame(animate);
+        }
+        animate();
+        
+        // On load, announce join
+        window.addEventListener('load', () => {
+            if (window.userId && window.username) {
+                channel.publish('chat', { username: 'System', text: `${window.username} joined the world` });
+            }
+        });
+        
+        // Handle window resize
+        window.addEventListener('resize', onWindowResize, false);
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+    </script>
+</body>
+</html>

@@ -64,3 +64,35 @@
     }
   ]
 }
+{
+  "indexes": [
+    {
+      "collectionId": "posts",
+      "fields": [
+        { "fieldPath": "createdAt", "mode": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionId": "posts",
+      "fields": [
+        { "fieldPath": "userId", "mode": "ASCENDING" },
+        { "fieldPath": "createdAt", "mode": "DESCENDING" }
+      ]
+    }
+  ]
+}
+,
+    {
+      "collectionId": "communities",
+      "fields": [
+        { "fieldPath": "isPublic", "mode": "ASCENDING" },
+        { "fieldPath": "createdAt", "mode": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionId": "squads",
+      "fields": [
+        { "fieldPath": "participants", "mode": "ARRAY_CONTAINS" },
+        { "fieldPath": "lastMessageAt", "mode": "DESCENDING" }
+      ]
+    }

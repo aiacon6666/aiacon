@@ -1,0 +1,5 @@
+// Add after the header:
+<TouchableOpacity onPress={() => navigation.navigate('NewConversation')} style={{ position: 'absolute', top: 60, right: 20 }}>
+  <Ionicons name="create-outline" size={28} color={colors.lavender} />
+</TouchableOpacity>
+// And create a new screen NewConversationScreen to search users and start chat.
