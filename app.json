@@ -21,7 +21,8 @@
         "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO",
         "android.permission.MODIFY_AUDIO_SETTINGS"
-      ]
+      ],
+      "versionCode": 4
     },
     "plugins": [
       "expo-font",
