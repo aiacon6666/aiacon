@@ -68,3 +68,7 @@ export const GEMINI_API_KEY = geminiApiKey;
 export const ABLY_API_KEY = ablyApiKey;
 export const GOOGLE_CLIENT_ID = googleWebClientId;
 export const FACEBOOK_APP_ID = facebookAppId;
+export const GEMINI_API_KEY = 'AQ.Ab8RN6KaZKbnv1UqeKVYcxQx-HKhzeWAQ4ftu1n3-HVgcm9ngg';
+export const GEMINI_API_KEY = 'AQ.Ab8RN6KaZKbnv1UqeKVYcxQx-HKhzeWAQ4ftu1n3-HVgcm9ngg';
+export const YOUTUBE_API_KEY = 'AIzaSyA_n5ggQoHy3IY4Y8qQeEe7GNsXARSl4Zk';
+export const ABLY_API_KEY = 'NjrmNQ.66dhMw:izwaQFajID-U-M8Xfz87nZpYUPtP_3lnipBCiOSyyjc';
