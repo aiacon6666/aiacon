@@ -31,6 +31,9 @@ jobs:
             # Skip Jetifying hermes-android — it's already AndroidX-clean, Jetifier OOMs on it
             echo "android.jetifier.ignorelist=hermes-android" >> android/gradle.properties
       - run:
+          name: Install Ninja (required by expo-av CMake build)
+          command: sudo apt-get install -y ninja-build
+      - run:
           name: Build APK with Gradle
           command: |
             cd android
