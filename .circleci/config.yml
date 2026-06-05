@@ -8,6 +8,8 @@ jobs:
     machine:
       image: ubuntu-2204:current
     resource_class: large
+    environment:
+      ANDROID_HOME: /home/circleci/android-sdk
     steps:
       - checkout
       - node/install:
@@ -22,14 +24,17 @@ jobs:
           name: Prebuild Android native folder
           command: npx expo prebuild --platform android --clean
       - run:
+          name: Create local.properties with SDK path
+          command: echo "sdk.dir=$ANDROID_HOME" > android/local.properties
+      - run:
           name: Build APK with Gradle
           command: |
             cd android
             chmod +x gradlew
-            ./gradlew assembleRelease
+            ./gradlew assembleDebug --no-daemon
       - store_artifacts:
-          path: android/app/build/outputs/apk/release/app-release.apk
-          destination: aiacon-release.apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          destination: aiacon-debug.apk
 
 workflows:
   build:
