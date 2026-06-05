@@ -5,8 +5,8 @@ orbs:
 
 jobs:
   build-android:
-    machine:
-      image: ubuntu-2204:current
+    docker:
+      - image: cimg/android:2024.01
     resource_class: large
     steps:
       - checkout
@@ -20,16 +20,28 @@ jobs:
           command: npm install -g expo-cli
       - run:
           name: Prebuild Android native folder
-          command: npx expo prebuild --platform android --clean
+          command: npx expo prebuild --platform android --clean --no-install
+      - run:
+          name: Configure Gradle for CI
+          command: |
+            # Increase JVM heap to 4 GB (default 2 GB OOMs on Hermes AAR Jetifier)
+            sed -i 's/org.gradle.jvmargs=.*/org.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=512m/' android/gradle.properties
+            # Build arm64-v8a only — all modern Android phones, cuts compile time significantly
+            sed -i 's/reactNativeArchitectures=.*/reactNativeArchitectures=arm64-v8a/' android/gradle.properties
+            # Skip Jetifying hermes-android — it's already AndroidX-clean, Jetifier OOMs on it
+            echo "android.jetifier.ignorelist=hermes-android" >> android/gradle.properties
+      - run:
+          name: Install Ninja (required by expo-av CMake build)
+          command: sudo apt-get install -y ninja-build
       - run:
           name: Build APK with Gradle
           command: |
             cd android
             chmod +x gradlew
-            ./gradlew assembleRelease
+            ./gradlew assembleDebug --no-daemon
       - store_artifacts:
-          path: android/app/build/outputs/apk/release/app-release.apk
-          destination: aiacon-release.apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          destination: aiacon-debug.apk
 
 workflows:
   build:
@@ -37,4 +49,6 @@ workflows:
       - build-android:
           filters:
             branches:
-              only: main
+              only:
+                - main
+                - chunk/fix-pngjs-prebuild-android

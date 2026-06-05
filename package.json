@@ -45,7 +45,11 @@
   },
   "devDependencies": {
     "@babel/core": "^7.24.0",
-    "babel-preset-expo": "~11.0.6"
+    "babel-preset-expo": "~11.0.6",
+    "pngjs": "5.0.0"
+  },
+  "overrides": {
+    "pngjs": "5.0.0"
   },
   "private": true
 }
