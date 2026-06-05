@@ -1,4 +1,4 @@
-package com.aiacon
+package com.snaluca.aiacon
 
 import android.os.Build
 import android.os.Bundle
