@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "AiaCon",
-    "slug": "aiacon",
+    "slug": "aiacon-new",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -11,28 +11,17 @@
       "resizeMode": "contain",
       "backgroundColor": "#0A0A14"
     },
-    "assetBundlePatterns": ["**/*"],
-    "ios": {
-      "supportsTablet": false,
-      "bundleIdentifier": "com.snaluca.aiacon"
-    },
     "android": {
+      "package": "com.snaluca.aiacon",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0A0A14"
       },
-      "package": "com.snaluca.aiacon",
-      "versionCode": 1,
       "permissions": [
-        "CAMERA",
-        "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE",
-        "RECORD_AUDIO",
-        "INTERNET"
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS"
       ]
-    },
-    "web": {
-      "favicon": "./assets/icon.png"
     },
     "plugins": [
       "expo-font",
@@ -43,7 +32,7 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "9344650d-f580-4e1b-9bdc-18c6568f333f"
+        "projectId": "e9df87ba-e403-4777-aa27-958faeda3d33"
       }
     }
   }
